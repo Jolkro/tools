@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Træning</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--blue:#3b82f6;--green:#22c55e;--orange:#f97316;--red:#ef4444;--purple:#8b5cf6;--gray:#6b7280;--dark:#111827;--light:#f9fafb}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f3f4f6;color:var(--dark);min-height:100vh;-webkit-tap-highlight-color:transparent}
+.app{max-width:480px;margin:0 auto;padding:16px;padding-bottom:100px}
+.card{background:#fff;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.card-accent{border-left:4px solid var(--blue)}
+h1{font-size:1.5rem;font-weight:800;line-height:1.2}
+h2{font-size:1.2rem;font-weight:700}
+h3{font-size:1rem;font-weight:600}
+p{line-height:1.5}
+.text-sm{font-size:.875rem}
+.text-xs{font-size:.75rem}
+.text-gray{color:var(--gray)}
+.text-center{text-align:center}
+.mt-1{margin-top:4px}.mt-2{margin-top:8px}.mt-3{margin-top:12px}.mt-4{margin-top:16px}
+.mb-1{margin-bottom:4px}.mb-2{margin-bottom:8px}.mb-3{margin-bottom:12px}.mb-4{margin-bottom:16px}
+.flex{display:flex}.items-center{align-items:center}.justify-between{justify-content:space-between}.gap-1{gap:4px}.gap-2{gap:8px}.gap-3{gap:12px}
+.flex-wrap{flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:99px;font-size:.75rem;font-weight:600}
+.badge-blue{background:#dbeafe;color:#1d4ed8}
+.badge-orange{background:#ffedd5;color:#c2410c}
+.badge-green{background:#dcfce7;color:#166534}
+.badge-red{background:#fee2e2;color:#991b1b}
+.badge-purple{background:#ede9fe;color:#5b21b6}
+.badge-gray{background:#f3f4f6;color:#374151}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:16px;border-radius:14px;font-size:1rem;font-weight:700;border:none;cursor:pointer;transition:transform .1s,opacity .1s;-webkit-appearance:none}
+.btn:active{transform:scale(.97);opacity:.9}
+.btn-primary{background:var(--dark);color:#fff}
+.btn-green{background:var(--green);color:#fff}
+.btn-orange{background:var(--orange);color:#fff}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-red{background:var(--red);color:#fff}
+.btn-outline{background:transparent;border:2px solid #e5e7eb;color:var(--dark)}
+.btn-sm{padding:10px 16px;font-size:.875rem;width:auto;border-radius:10px}
+.progress-bar{height:6px;background:#e5e7eb;border-radius:99px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;border-radius:99px;transition:width .5s ease}
+.timer-display{font-size:4rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.timer-ring{width:200px;height:200px;margin:0 auto}
+.timer-ring circle{fill:none;stroke-width:8;stroke-linecap:round}
+.timer-ring .bg{stroke:#e5e7eb}
+.timer-ring .fg{transition:stroke-dashoffset .3s linear}
+.set-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:8px}
+.set-btn{padding:12px 8px;border-radius:12px;border:2px solid #e5e7eb;background:#fff;font-weight:700;font-size:1rem;cursor:pointer;text-align:center;transition:all .15s}
+.set-btn.active{border-color:var(--blue);background:#dbeafe;color:#1d4ed8}
+.set-btn.done{border-color:var(--green);background:#dcfce7;color:#166534}
+.rpe-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.rpe-btn{padding:12px 4px;border-radius:10px;border:2px solid #e5e7eb;background:#fff;font-weight:700;font-size:.9rem;cursor:pointer;text-align:center;transition:all .15s}
+.rpe-btn.selected{color:#fff}
+.rpe-btn.rpe-low{border-color:var(--green);background:var(--green)}
+.rpe-btn.rpe-mid{border-color:var(--orange);background:var(--orange)}
+.rpe-btn.rpe-high{border-color:var(--red);background:var(--red)}
+.checklist-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:var(--light);margin-bottom:8px;cursor:pointer;-webkit-user-select:none;user-select:none}
+.checklist-item .check{width:24px;height:24px;border-radius:50%;border:2px solid #d1d5db;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.checklist-item.checked .check{border-color:var(--green);background:var(--green);color:#fff}
+.checklist-item.checked span{text-decoration:line-through;opacity:.6}
+.tip-box{background:#eff6ff;border-radius:12px;padding:14px;margin-top:12px}
+.tip-box p{font-size:.8rem;color:#1e40af;margin-bottom:4px}
+.tip-box .label{font-weight:700;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;color:#3b82f6}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.overlay-content{background:#fff;border-radius:20px;padding:32px;max-width:400px;width:100%;text-align:center}
+.summary-exercise{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f3f4f6}
+.summary-exercise:last-child{border-bottom:none}
+.nav-dots{display:flex;justify-content:center;gap:6px;margin:12px 0}
+.nav-dot{width:8px;height:8px;border-radius:50%;background:#d1d5db}
+.nav-dot.active{background:var(--blue);width:24px;border-radius:4px}
+.save-status{padding:12px;border-radius:12px;font-size:.875rem;font-weight:600;text-align:center;margin-top:12px}
+.save-ok{background:#dcfce7;color:#166534}
+.save-err{background:#fee2e2;color:#991b1b}
+.hidden{display:none!important}
+@media(prefers-color-scheme:dark){
+  body{background:#111827;color:#f9fafb}
+  .card{background:#1f2937;box-shadow:none}
+  .checklist-item{background:#374151}
+  .tip-box{background:#1e3a5f}
+  .tip-box p{color:#93c5fd}
+  .tip-box .label{color:#60a5fa}
+  .set-btn,.rpe-btn{background:#374151;border-color:#4b5563;color:#f9fafb}
+  .set-btn.active{background:#1e3a5f;border-color:var(--blue);color:#93c5fd}
+  .set-btn.done{background:#14532d;border-color:var(--green);color:#86efac}
+  .btn-outline{border-color:#4b5563;color:#f9fafb}
+  .progress-bar,.timer-ring .bg{background:#374151;stroke:#374151}
+  .badge-gray{background:#374151;color:#d1d5db}
+}
+</style>
+</head>
+<body>
+<div id="app" class="app"></div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────
+const SESSIONS = {
+  A: {
+    name: "Session A: Push + Squat",
+    focus: "Bryst, skuldre, lår, core",
+    day: "Mandag", color: "blue",
+    warmup: { duration: "5 min", exercises: ["Armcirkler — 20 hver retning","Bodyweight squats — 2×10 (langsomt)","Shoulder taps i plank — 2×8"] },
+    cooldown: { duration: "5 min", exercises: ["Hoftebøjer-stræk — 60 sek hver side","Bryst-stræk i dørkarm — 60 sek","10 dybe vejrtrækninger"] },
+    exercises: [
+      { name:"Bodyweight Squat", sets:4, reps:"12-15", rpe:7, tempo:"3 sek ned, 1 sek op",
+        desc:"Stå med fødderne i skulderbredde. Sæt dig ned som om du sætter dig på en stol. Hold ryggen ret og brystet oppe. Gå så dybt som din mobilitet tillader.",
+        tips:["Hælene i gulvet hele vejen","Knæene følger tæernes retning","Kig frem, ikke ned","Pust ind ned, ud op"] },
+      { name:"Push-ups", sets:4, reps:"max (RPE 8)", rpe:8, tempo:"2 sek ned, 1 sek op",
+        desc:"Fuld range of motion. Brystet næsten i gulvet, armene strakt i toppen. Under 5 reps fra tæerne? Kør fra knæene.",
+        tips:["Kroppen er en lige linje","Albuerne 45° fra kroppen","Spænd maven","Fuld lockout i toppen"] },
+      { name:"Pike Push-ups", sets:3, reps:"8-10", rpe:7, tempo:"2 sek ned, 1 sek op",
+        desc:"Omvendt V-position. Bøj armene og sænk hovedet mod gulvet. Din overhead press uden vægte.",
+        tips:["Tættere fødder = sværere","Hovedet foran hænderne","Core spændt","Fødder på trappetrin for mere"] },
+      { name:"Split Squat", sets:3, reps:"10 hvert ben", rpe:7, tempo:"3 sek ned, 1 sek op",
+        desc:"Ét ben foran, ét bagved. Sænk til bagerste knæ næsten rører gulvet. Bygger single-leg styrke og balance.",
+        tips:["Knæ ikke forbi tåen","Vægt på forhælen","Overkrop lodret","Start med svage ben"] },
+      { name:"Dead Bug", sets:3, reps:"10 hver side", rpe:null, tempo:"Langsomt",
+        desc:"Lig på ryggen, arme op, ben i 90°. Stræk modsatte arm og ben ud. Lænden SKAL forblive i gulvet.",
+        tips:["Lænden må aldrig løfte","Pust ud ved stræk","Langsomt og kontrolleret","Tennisbold under lænden"] }
+    ]
+  },
+  B: {
+    name: "Session B: Pull + Hinge",
+    focus: "Ryg, baglår, posterior kæde, greb",
+    day: "Onsdag", color: "green",
+    warmup: { duration: "5 min", exercises: ["Cat-cow — 10 reps","Hip hinge med kosteskaft — 2×10","Scapular push-ups — 2×10"] },
+    cooldown: { duration: "5 min", exercises: ["Hamstring stræk — 60 sek hver side","Lat stræk i dørkarm — 60 sek hver side","Thoracic rotation — 10 hver side"] },
+    exercises: [
+      { name:"Hip Hinge (RDL-mønster)", sets:3, reps:"12", rpe:6, tempo:"3 sek ned, 1 sek op",
+        desc:"Mønster-træning. Skub hoften bagud, hænder glider ned ad lårene. Mærk hamstring-stræk. Stop og kom op.",
+        tips:["Ryggen ALTID neutral","Tænk 'skub hoften bagud'","Knæene bøjer kun lidt","Kosteskaft langs ryggen til check"] },
+      { name:"Inverted Row (under bord)", sets:4, reps:"max (RPE 8)", rpe:8, tempo:"2 sek op, 2 sek ned",
+        desc:"Under et solidt spisebord. Træk brystet op til bordkanten. Bedste bodyweight ryg-øvelse.",
+        tips:["Fødder tæt = nemmere","Krop stiv som en planke","Klem skulderblade i toppen","Håndklæde for bedre greb"] },
+      { name:"Glute Bridge", sets:4, reps:"15", rpe:7, tempo:"2 sek op, 3 sek hold",
+        desc:"Lig på ryggen, knæ bøjet. Skub hoften op, klem ballerne. Hold i toppen. Mærk det i ballerne, IKKE lænden.",
+        tips:["Klem ballerne HÅRDT i top","Ingen overstrakt lænd","Fødder skulderbredde","Pres igennem hælene"] },
+      { name:"Reverse Lunge", sets:3, reps:"10 hvert ben", rpe:7, tempo:"3 sek ned, 1 sek op",
+        desc:"Stå oprejst, tag et skridt BAGUD. Mere hofte/balle end forward lunge og lettere for knæene.",
+        tips:["Bagud, ikke fremad","Overkrop lodret","Forreste knæ over ankel","Skub op fra forhælen"] },
+      { name:"Superman Hold", sets:3, reps:"20 sek", rpe:null, tempo:"Hold",
+        desc:"Lig på maven. Løft arme og ben. Klem rygmusklerne. Anti-sidde-øvelsen.",
+        tips:["Kig ned i gulvet","Stræk dig lang","Spænd baller","Pust normalt"] },
+      { name:"Plank", sets:3, reps:"30-45 sek", rpe:null, tempo:"Hold",
+        desc:"Albuer under skuldrene, kroppen en lige linje. Over 60 sek nemt? Tilføj arm-stræk.",
+        tips:["Klem baller + maven","Hoften må ikke synke","Neutral nakke","Pust normalt"] }
+    ]
+  },
+  C: {
+    name: "Session C: Helkrop + Kondition",
+    focus: "Helkrop, mobilitet, arbejdskapacitet",
+    day: "Fredag", color: "purple",
+    warmup: { duration: "5 min", exercises: ["Jumping jacks — 30 sek","Bodyweight lunges — 2×8","Inchworm walkouts — 5 reps"] },
+    cooldown: { duration: "5 min", exercises: ["World's Greatest Stretch — 5 hver side","Dyb squat hold — 60 sek","10 dybe vejrtrækninger"] },
+    exercises: [
+      { name:"Squat til Calf Raise", sets:3, reps:"12", rpe:7, tempo:"2 sek ned, eksplosivt op",
+        desc:"Fuld squat, rejs dig og gå op på tæerne i toppen. Styrke + power i én bevægelse.",
+        tips:["Kontrolleret ned, eksplosivt op","Helt op på tåspidserne","Brug armene for balance","Fuld dybde"] },
+      { name:"Push-up til Downward Dog", sets:3, reps:"8", rpe:7, tempo:"Kontrolleret",
+        desc:"Én push-up, pres hoften op i omvendt V, hold 2 sek, tilbage. Fuld krop flow.",
+        tips:["Push-up med fuld range","Stræk hæle mod gulvet i DD","Core spændt hele vejen","Find en rytme"] },
+      { name:"Reverse Lunge til Knee Drive", sets:3, reps:"8 hvert ben", rpe:7, tempo:"Kontrolleret",
+        desc:"Skridt bagud i lunge, driv knæet eksplosivt op foran dig. Balance, power og single-leg styrke.",
+        tips:["Lunge langsomt ned","Knee drive eksplosivt","Overkrop oprejst","Brug armene"] },
+      { name:"Wall Sit", sets:3, reps:"30-45 sek", rpe:8, tempo:"Hold",
+        desc:"Ryg mod væggen, lår parallelle med gulvet. Hold. Simpelt men brutalt effektivt.",
+        tips:["Ryg helt flad mod væg","Knæ 90°","Vægt i hælene","Pust normalt"] },
+      { name:"Bear Crawl", sets:3, reps:"30 sek", rpe:7, tempo:"Langsomt",
+        desc:"Hænder og fødder, knæ svæver 2-3 cm. Kravl frem og tilbage. Ser let ud, føles som ild.",
+        tips:["Knæ MÅ IKKE røre gulvet","Modsatte arm+ben sammen","Hold hoften lav","Langsomt = sværere"] },
+      { name:"Bird-Dog", sets:3, reps:"10 hver side", rpe:null, tempo:"3 sek hold",
+        desc:"Alle fire. Stræk modsatte arm og ben. Hold 3 sek. Core stabilitet og balance.",
+        tips:["Hoften må ikke rotere","Stræk dig lang","Neutral nakke","Spænd maven"] }
+    ]
+  }
+};
+
+const MOBILITY = [
+  {name:"Cat-cow",duration:"2 min"},{name:"World's Greatest Stretch",duration:"5 hver side"},
+  {name:"Dyb squat hold",duration:"3 × 30 sek"},{name:"Hip 90/90 stræk",duration:"2 min hver side"},
+  {name:"Thoracic rotation",duration:"10 hver side"},{name:"Dørkarm lat-hang",duration:"3 × 20 sek"},
+  {name:"Dybe vejrtrækninger",duration:"2 min"}
+];
+
+const READINESS = {
+  full:   {label:"Full Send",emoji:"🟢",color:"green",adj:"Kør som skrevet. Evt. +1 sæt på hovedøvelser."},
+  normal: {label:"Normal",emoji:"🟡🟢",color:"blue",adj:"Kør som skrevet."},
+  easy:   {label:"Let dag",emoji:"🟡",color:"orange",adj:"Drop 1 sæt per øvelse. RPE −1. Fokus på teknik."},
+  recovery:{label:"Hviledag",emoji:"🔴",color:"red",adj:"Spring styrke over. Mobility flow eller gåtur."}
+};
+
+// ─── STATE ──────────────────────────────────────────────────────────
+const params = new URLSearchParams(location.search);
+let state = {
+  screen: 'home', // home, warmup, exercise, rest, cooldown, done
+  sessionKey: params.get('session') || autoSession(),
+  readiness: params.get('readiness') || 'normal',
+  webhook: params.get('webhook') || '',
+  exIndex: 0,
+  setIndex: 0,
+  startTime: null,
+  warmupChecked: [],
+  cooldownChecked: [],
+  log: {}, // { exIndex: { sets: [{reps,rpe},...], completed:bool } }
+  timerSeconds: 0,
+  timerTotal: 0,
+  timerInterval: null,
+  showTips: false
+};
+
+function autoSession() {
+  const d = new Date().getDay(); // 0=Sun
+  if (d === 1) return 'A'; // Mon
+  if (d === 3) return 'B'; // Wed
+  if (d === 5) return 'C'; // Fri
+  return 'A'; // default
+}
+
+function getSession() { return SESSIONS[state.sessionKey]; }
+function getReadiness() { return READINESS[state.readiness]; }
+function adjustedSets(ex) { return state.readiness === 'easy' ? Math.max(ex.sets - 1, 2) : ex.sets; }
+function adjustedRPE(ex) { return ex.rpe ? (state.readiness === 'easy' ? ex.rpe - 1 : ex.rpe) : null; }
+
+// ─── RENDER ─────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const app = () => document.getElementById('app');
+
+function render() {
+  switch(state.screen) {
+    case 'home': return renderHome();
+    case 'warmup': return renderWarmup();
+    case 'exercise': return renderExercise();
+    case 'rest': return renderRest();
+    case 'cooldown': return renderCooldown();
+    case 'done': return renderDone();
+    case 'mobility': return renderMobility();
+  }
+}
+
+function renderHome() {
+  const s = getSession();
+  const r = getReadiness();
+  const colorMap = {blue:'badge-blue',green:'badge-green',purple:'badge-purple',orange:'badge-orange',red:'badge-red'};
+
+  if (state.readiness === 'recovery') {
+    app().innerHTML = `
+      <div style="padding-top:40px">
+        <div class="text-center mb-4">
+          <div style="font-size:3rem">🔴</div>
+          <h1 class="mt-2">Hviledag</h1>
+          <p class="text-gray mt-2">${r.adj}</p>
+        </div>
+        <div class="card">
+          <h3 class="mb-3">Mobility Flow (20 min)</h3>
+          ${MOBILITY.map(m => `
+            <div class="flex justify-between items-center" style="padding:8px 0;border-bottom:1px solid #f3f4f6">
+              <span>${m.name}</span>
+              <span class="text-sm text-gray">${m.duration}</span>
+            </div>
+          `).join('')}
+        </div>
+        <button class="btn btn-red mt-3" onclick="startMobility()">Start Mobility Flow</button>
+      </div>`;
+    return;
+  }
+
+  app().innerHTML = `
+    <div style="padding-top:24px">
+      <div class="mb-4">
+        <p class="text-sm text-gray">${formatDate()}</p>
+        <h1 class="mt-1">${s.name}</h1>
+        <p class="text-sm text-gray mt-1">${s.focus}</p>
+        <div class="flex gap-2 mt-3 flex-wrap">
+          <span class="badge ${colorMap[r.color] || 'badge-gray'}">${r.emoji} ${r.label}</span>
+          <span class="badge badge-gray">${s.exercises.length} øvelser</span>
+          <span class="badge badge-gray">~30 min</span>
+        </div>
+        ${state.readiness !== 'normal' && state.readiness !== 'full' ? `<p class="text-sm mt-2" style="color:var(--orange)">${r.adj}</p>` : ''}
+      </div>
+
+      <div class="card">
+        <h3 class="mb-2">Dagens øvelser</h3>
+        ${s.exercises.map((ex, i) => `
+          <div class="flex justify-between items-center" style="padding:8px 0;${i < s.exercises.length-1 ? 'border-bottom:1px solid #f3f4f6':''}" >
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-gray" style="min-width:20px">${i+1}</span>
+              <span>${ex.name}</span>
+            </div>
+            <span class="text-xs text-gray">${adjustedSets(ex)}×${ex.reps}</span>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="flex gap-2">
+        <select id="session-select" onchange="changeSession(this.value)" style="flex:1;padding:14px;border-radius:14px;border:2px solid #e5e7eb;font-size:.9rem;font-weight:600;background:#fff;-webkit-appearance:none">
+          <option value="A" ${state.sessionKey==='A'?'selected':''}>A: Push + Squat</option>
+          <option value="B" ${state.sessionKey==='B'?'selected':''}>B: Pull + Hinge</option>
+          <option value="C" ${state.sessionKey==='C'?'selected':''}>C: Helkrop</option>
+        </select>
+        <select id="readiness-select" onchange="changeReadiness(this.value)" style="flex:1;padding:14px;border-radius:14px;border:2px solid #e5e7eb;font-size:.9rem;font-weight:600;background:#fff;-webkit-appearance:none">
+          <option value="full" ${state.readiness==='full'?'selected':''}>🟢 Full Send</option>
+          <option value="normal" ${state.readiness==='normal'?'selected':''}>🟡🟢 Normal</option>
+          <option value="easy" ${state.readiness==='easy'?'selected':''}>🟡 Let dag</option>
+          <option value="recovery" ${state.readiness==='recovery'?'selected':''}>🔴 Hviledag</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary mt-3" onclick="startWorkout()">
+        Start træning →
+      </button>
+    </div>`;
+}
+
+function renderWarmup() {
+  const s = getSession();
+  app().innerHTML = `
+    <div>
+      <div class="flex justify-between items-center mb-4">
+        <button class="btn-sm btn-outline" onclick="goHome()" style="width:auto;padding:8px 16px;border-radius:10px;border:2px solid #e5e7eb;background:transparent;font-weight:600;cursor:pointer">← Tilbage</button>
+        <span class="badge badge-orange">Opvarmning</span>
+      </div>
+      <div class="card" style="border-left:4px solid var(--orange)">
+        <h2>Opvarmning (${s.warmup.duration})</h2>
+        <p class="text-sm text-gray mb-3">Spring ALDRIG opvarmningen over.</p>
+        ${s.warmup.exercises.map((ex, i) => `
+          <div class="checklist-item ${state.warmupChecked.includes(i)?'checked':''}" onclick="toggleWarmup(${i})">
+            <div class="check">${state.warmupChecked.includes(i)?'✓':''}</div>
+            <span>${ex}</span>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn btn-orange" onclick="startExercises()">
+        Klar til øvelser →
+      </button>
+    </div>`;
+}
+
+function renderExercise() {
+  const s = getSession();
+  const ex = s.exercises[state.exIndex];
+  const numSets = adjustedSets(ex);
+  const rpe = adjustedRPE(ex);
+  const exLog = state.log[state.exIndex] || { sets: [] };
+  const totalEx = s.exercises.length;
+  const completedEx = Object.values(state.log).filter(l => l.completed).length;
+  const progress = Math.round((completedEx / totalEx) * 100);
+
+  // Is current set logged?
+  const currentSetLogged = exLog.sets[state.setIndex] != null;
+
+  app().innerHTML = `
+    <div>
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-sm text-gray">Øvelse ${state.exIndex+1} af ${totalEx}</span>
+        <span class="text-sm text-gray">${completedEx}/${totalEx} udført</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${progress}%;background:var(--green)"></div></div>
+
+      <div class="nav-dots mb-3">
+        ${s.exercises.map((_, i) => `<div class="nav-dot ${i === state.exIndex ? 'active' : ''}" ${state.log[i]?.completed ? 'style="background:var(--green)"' : ''} onclick="jumpToExercise(${i})"></div>`).join('')}
+      </div>
+
+      <div class="card">
+        <h2>${ex.name}</h2>
+        <div class="flex gap-2 flex-wrap mt-2">
+          <span class="badge badge-gray">${numSets} × ${ex.reps}</span>
+          ${rpe ? `<span class="badge badge-orange">RPE ${rpe}</span>` : ''}
+          <span class="badge badge-blue">${ex.tempo}</span>
+        </div>
+
+        <p class="text-sm mt-3">${ex.desc}</p>
+
+        <button onclick="toggleTips()" style="background:none;border:none;color:var(--blue);font-size:.85rem;font-weight:600;cursor:pointer;margin-top:8px;padding:0">
+          ${state.showTips ? '▾ Skjul tips' : '▸ Vis tips'}
+        </button>
+        ${state.showTips ? `
+          <div class="tip-box">
+            <div class="label">Tips</div>
+            ${ex.tips.map(t => `<p>• ${t}</p>`).join('')}
+          </div>` : ''}
+      </div>
+
+      <div class="card">
+        <h3 class="mb-2">Sæt</h3>
+        <div class="set-grid mb-3">
+          ${Array.from({length: numSets}, (_, i) => {
+            const done = exLog.sets[i] != null;
+            const active = i === state.setIndex;
+            return `<div class="set-btn ${done ? 'done' : active ? 'active' : ''}" onclick="goToSet(${i})">
+              ${done ? '✓' : `Sæt ${i+1}`}
+            </div>`;
+          }).join('')}
+        </div>
+
+        <div style="background:var(--light);border-radius:12px;padding:16px">
+          <p class="text-sm" style="font-weight:600;margin-bottom:8px">Sæt ${state.setIndex + 1} af ${numSets}</p>
+
+          ${isTimedExercise(ex) ? `
+            <p class="text-xs text-gray mb-2">Mål: ${ex.reps}</p>
+            <div class="flex gap-2 mt-2">
+              <button class="btn btn-green" onclick="logTimedSet()">
+                ✓ Udført
+              </button>
+            </div>
+          ` : `
+            <p class="text-xs text-gray mb-2">Mål: ${ex.reps} reps @ ${ex.tempo}</p>
+            <p class="text-xs text-gray mb-2">Reps udført:</p>
+            <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px">
+              ${Array.from({length: 20}, (_, i) => {
+                const n = i + 1;
+                const logged = exLog.sets[state.setIndex];
+                const selected = logged != null && logged.reps === n;
+                return `<div class="set-btn ${selected?'done':''}" style="padding:10px 4px;font-size:.85rem" onclick="logReps(${n})">${n}</div>`;
+              }).join('')}
+            </div>
+          `}
+
+          ${rpe ? `
+            <p class="text-xs text-gray mt-3 mb-2">RPE (hvordan føltes det?):</p>
+            <div class="rpe-grid">
+              ${[5,6,7,8,9,10].map(v => {
+                const logged = exLog.sets[state.setIndex];
+                const sel = logged && logged.rpe === v;
+                const cls = sel ? (v <= 6 ? 'selected rpe-low' : v <= 8 ? 'selected rpe-mid' : 'selected rpe-high') : '';
+                return `<div class="rpe-btn ${cls}" onclick="logRPE(${v})">${v}</div>`;
+              }).join('')}
+            </div>
+          ` : ''}
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        ${state.exIndex > 0 ? `<button class="btn btn-outline" style="flex:1" onclick="prevExercise()">← Forrige</button>` : ''}
+        <button class="btn ${allSetsLogged() ? 'btn-green' : 'btn-primary'}" style="flex:2" onclick="nextAction()">
+          ${allSetsLogged() ? (state.exIndex < totalEx - 1 ? 'Næste øvelse →' : 'Til nedkøling →') : 'Spring over →'}
+        </button>
+      </div>
+    </div>`;
+}
+
+function renderRest() {
+  const pct = state.timerTotal > 0 ? ((state.timerTotal - state.timerSeconds) / state.timerTotal) * 100 : 0;
+  const circumference = 2 * Math.PI * 90;
+  const offset = circumference - (pct / 100) * circumference;
+
+  app().innerHTML = `
+    <div class="text-center" style="padding-top:40px">
+      <p class="text-sm text-gray mb-2">Hvil</p>
+      <svg class="timer-ring" viewBox="0 0 200 200">
+        <circle class="bg" cx="100" cy="100" r="90" stroke="#e5e7eb"/>
+        <circle class="fg" cx="100" cy="100" r="90" stroke="var(--blue)"
+          stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"
+          transform="rotate(-90 100 100)"/>
+      </svg>
+      <div class="timer-display mt-2" style="color:${state.timerSeconds <= 5 ? 'var(--red)' : 'var(--dark)'}">${state.timerSeconds}</div>
+      <p class="text-sm text-gray mt-1">sekunder</p>
+      <div class="flex gap-2 mt-4" style="max-width:300px;margin:0 auto">
+        <button class="btn btn-outline" onclick="adjustTimer(-15)">−15s</button>
+        <button class="btn btn-outline" onclick="adjustTimer(15)">+15s</button>
+      </div>
+      <button class="btn btn-primary mt-3" onclick="skipRest()" style="max-width:300px;margin:16px auto 0">
+        Spring hvil over →
+      </button>
+    </div>`;
+}
+
+function renderCooldown() {
+  const s = getSession();
+  app().innerHTML = `
+    <div>
+      <div class="flex justify-between items-center mb-4">
+        <span class="badge badge-blue">Nedkøling</span>
+        <span class="text-sm text-gray">${s.cooldown.duration}</span>
+      </div>
+      <div class="card" style="border-left:4px solid var(--blue)">
+        <h2>Nedkøling</h2>
+        <p class="text-sm text-gray mb-3">Tag dig tid. Din krop har fortjent det.</p>
+        ${s.cooldown.exercises.map((ex, i) => `
+          <div class="checklist-item ${state.cooldownChecked.includes(i)?'checked':''}" onclick="toggleCooldown(${i})">
+            <div class="check">${state.cooldownChecked.includes(i)?'✓':''}</div>
+            <span>${ex}</span>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn btn-green" onclick="finishWorkout()">
+        ✓ Session færdig!
+      </button>
+    </div>`;
+}
+
+function renderDone() {
+  const s = getSession();
+  const dur = state.startTime ? Math.round((Date.now() - state.startTime) / 60000) : '?';
+  const r = getReadiness();
+
+  let exerciseSummary = s.exercises.map((ex, i) => {
+    const exLog = state.log[i];
+    if (!exLog || exLog.sets.length === 0) return `
+      <div class="summary-exercise">
+        <span>${ex.name}</span>
+        <span class="text-sm text-gray">Sprunget over</span>
+      </div>`;
+    const setStr = exLog.sets.map(s => s ? `${s.reps || '✓'}${s.rpe ? ` @${s.rpe}` : ''}` : '—').join(', ');
+    return `
+      <div class="summary-exercise">
+        <div>
+          <span style="font-weight:600">${ex.name}</span>
+          <p class="text-xs text-gray">${setStr}</p>
+        </div>
+        <span class="badge badge-green">✓</span>
+      </div>`;
+  }).join('');
+
+  app().innerHTML = `
+    <div class="text-center" style="padding-top:32px">
+      <div style="font-size:3.5rem">💪</div>
+      <h1 class="mt-2">Stærkt arbejde!</h1>
+      <p class="text-gray mt-1">${s.name} gennemført på ${dur} min</p>
+      <span class="badge badge-${r.color === 'blue' ? 'blue' : r.color === 'green' ? 'green' : r.color === 'orange' ? 'orange' : 'red'} mt-2">${r.emoji} ${r.label}</span>
+    </div>
+
+    <div class="card mt-4">
+      <h3 class="mb-2">Oversigt</h3>
+      ${exerciseSummary}
+    </div>
+
+    <div id="save-status"></div>
+
+    <button class="btn btn-primary mt-3" onclick="goHome()">
+      ← Tilbage til start
+    </button>`;
+
+  saveWorkout();
+}
+
+function renderMobility() {
+  app().innerHTML = `
+    <div>
+      <button style="background:none;border:none;color:var(--gray);font-weight:600;cursor:pointer;margin-bottom:16px" onclick="goHome()">← Tilbage</button>
+      <div class="card" style="border-left:4px solid var(--red)">
+        <h2>Mobility Flow 🔴</h2>
+        <p class="text-sm text-gray mb-3">Blid og restituerende — ca. 20 min</p>
+        ${MOBILITY.map((m, i) => `
+          <div class="checklist-item" onclick="this.classList.toggle('checked');this.querySelector('.check').textContent=this.classList.contains('checked')?'✓':''">
+            <div class="check"></div>
+            <span>${m.name} — ${m.duration}</span>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn btn-red" onclick="goHome()">Færdig</button>
+    </div>`;
+}
+
+// ─── ACTIONS ────────────────────────────────────────────────────────
+function changeSession(key) { state.sessionKey = key; state.log = {}; render(); }
+function changeReadiness(val) { state.readiness = val; state.log = {}; render(); }
+function goHome() { clearTimer(); state.screen = 'home'; state.exIndex = 0; state.setIndex = 0; state.showTips = false; render(); }
+function startMobility() { state.screen = 'mobility'; render(); }
+
+function startWorkout() {
+  state.startTime = Date.now();
+  state.log = {};
+  state.warmupChecked = [];
+  state.cooldownChecked = [];
+  state.screen = 'warmup';
+  render();
+}
+
+function toggleWarmup(i) {
+  const idx = state.warmupChecked.indexOf(i);
+  if (idx >= 0) state.warmupChecked.splice(idx, 1);
+  else state.warmupChecked.push(i);
+  render();
+}
+
+function toggleCooldown(i) {
+  const idx = state.cooldownChecked.indexOf(i);
+  if (idx >= 0) state.cooldownChecked.splice(idx, 1);
+  else state.cooldownChecked.push(i);
+  render();
+}
+
+function startExercises() {
+  state.exIndex = 0;
+  state.setIndex = 0;
+  state.screen = 'exercise';
+  state.showTips = false;
+  render();
+  window.scrollTo(0, 0);
+}
+
+function toggleTips() { state.showTips = !state.showTips; render(); }
+
+function goToSet(i) { state.setIndex = i; render(); }
+
+function jumpToExercise(i) {
+  state.exIndex = i;
+  state.setIndex = 0;
+  state.showTips = false;
+  render();
+  window.scrollTo(0, 0);
+}
+
+function isTimedExercise(ex) {
+  return /sek|sec|hold/i.test(ex.reps) && !/hvert ben|hver side/i.test(ex.reps);
+}
+
+function logReps(n) {
+  if (!state.log[state.exIndex]) state.log[state.exIndex] = { sets: [], completed: false };
+  const exLog = state.log[state.exIndex];
+  if (!exLog.sets[state.setIndex]) exLog.sets[state.setIndex] = {};
+  exLog.sets[state.setIndex].reps = n;
+  checkSetComplete();
+  render();
+}
+
+function logTimedSet() {
+  if (!state.log[state.exIndex]) state.log[state.exIndex] = { sets: [], completed: false };
+  const exLog = state.log[state.exIndex];
+  exLog.sets[state.setIndex] = { reps: '✓', rpe: null };
+  advanceSet();
+}
+
+function logRPE(val) {
+  if (!state.log[state.exIndex]) state.log[state.exIndex] = { sets: [], completed: false };
+  const exLog = state.log[state.exIndex];
+  if (!exLog.sets[state.setIndex]) exLog.sets[state.setIndex] = {};
+  exLog.sets[state.setIndex].rpe = val;
+  checkSetComplete();
+  render();
+}
+
+function checkSetComplete() {
+  const ex = getSession().exercises[state.exIndex];
+  const exLog = state.log[state.exIndex];
+  const setData = exLog.sets[state.setIndex];
+  if (!setData) return;
+
+  const rpe = adjustedRPE(ex);
+  const hasReps = setData.reps != null;
+  const hasRPE = !rpe || setData.rpe != null;
+
+  if (hasReps && hasRPE) {
+    // Auto-advance after short delay
+    setTimeout(() => advanceSet(), 400);
+  }
+}
+
+function advanceSet() {
+  const ex = getSession().exercises[state.exIndex];
+  const numSets = adjustedSets(ex);
+  const exLog = state.log[state.exIndex];
+
+  if (state.setIndex < numSets - 1) {
+    state.setIndex++;
+    startRestTimer(75); // default 75 sec rest
+  } else {
+    exLog.completed = true;
+    render();
+  }
+}
+
+function allSetsLogged() {
+  const ex = getSession().exercises[state.exIndex];
+  const numSets = adjustedSets(ex);
+  const exLog = state.log[state.exIndex];
+  if (!exLog) return false;
+  return exLog.sets.filter(s => s != null).length >= numSets;
+}
+
+function nextAction() {
+  const s = getSession();
+  const exLog = state.log[state.exIndex];
+  if (exLog) exLog.completed = true;
+
+  if (state.exIndex < s.exercises.length - 1) {
+    state.exIndex++;
+    state.setIndex = 0;
+    state.showTips = false;
+    state.screen = 'exercise';
+  } else {
+    state.screen = 'cooldown';
+  }
+  render();
+  window.scrollTo(0, 0);
+}
+
+function prevExercise() {
+  if (state.exIndex > 0) {
+    state.exIndex--;
+    state.setIndex = 0;
+    state.showTips = false;
+    render();
+    window.scrollTo(0, 0);
+  }
+}
+
+function finishWorkout() { state.screen = 'done'; render(); }
+
+// ─── TIMER ──────────────────────────────────────────────────────────
+function startRestTimer(seconds) {
+  clearTimer();
+  state.timerSeconds = seconds;
+  state.timerTotal = seconds;
+  state.screen = 'rest';
+  render();
+
+  state.timerInterval = setInterval(() => {
+    state.timerSeconds--;
+    if (state.timerSeconds <= 0) {
+      clearTimer();
+      playBeep();
+      state.screen = 'exercise';
+      render();
+      window.scrollTo(0, 0);
+    } else {
+      render();
+    }
+  }, 1000);
+}
+
+function clearTimer() {
+  if (state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null; }
+}
+
+function adjustTimer(delta) {
+  state.timerSeconds = Math.max(5, state.timerSeconds + delta);
+  state.timerTotal = Math.max(state.timerTotal, state.timerSeconds);
+  render();
+}
+
+function skipRest() {
+  clearTimer();
+  state.screen = 'exercise';
+  render();
+  window.scrollTo(0, 0);
+}
+
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.15, 0.3].forEach(delay => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      gain.gain.value = 0.3;
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.1);
+    });
+  } catch(e) {}
+}
+
+// ─── SAVE ───────────────────────────────────────────────────────────
+function saveWorkout() {
+  const s = getSession();
+  const endTime = Date.now();
+  const payload = {
+    date: new Date().toISOString().slice(0, 10),
+    session: state.sessionKey,
+    sessionName: s.name,
+    readiness: state.readiness,
+    startTime: state.startTime ? new Date(state.startTime).toTimeString().slice(0,5) : null,
+    endTime: new Date(endTime).toTimeString().slice(0,5),
+    durationMinutes: state.startTime ? Math.round((endTime - state.startTime) / 60000) : null,
+    exercises: s.exercises.map((ex, i) => ({
+      name: ex.name,
+      targetSets: adjustedSets(ex),
+      targetReps: ex.reps,
+      targetRPE: adjustedRPE(ex),
+      sets: (state.log[i]?.sets || []).map((s, si) => ({
+        set: si + 1,
+        reps: s?.reps || null,
+        rpe: s?.rpe || null
+      })),
+      completed: state.log[i]?.completed || false
+    }))
+  };
+
+  // Try webhook
+  if (state.webhook) {
+    fetch(state.webhook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(r => {
+      if (r.ok) {
+        document.getElementById('save-status').innerHTML = '<div class="save-status save-ok">✓ Træningslog gemt! Aftenbriefingen samler den op.</div>';
+      } else {
+        throw new Error('Webhook returned ' + r.status);
+      }
+    })
+    .catch(e => {
+      showFallbackSave(payload);
+    });
+  } else {
+    showFallbackSave(payload);
+  }
+}
+
+function showFallbackSave(payload) {
+  const summary = formatSummaryText(payload);
+  document.getElementById('save-status').innerHTML = `
+    <div class="save-status save-err" style="background:#fef3c7;color:#92400e">
+      ⚠️ Ingen webhook konfigureret. Kopiér oversigten nedenfor til ClickUp Brain Dump.
+    </div>
+    <div class="card mt-2">
+      <pre style="font-size:.75rem;white-space:pre-wrap;word-break:break-word;font-family:monospace">${summary}</pre>
+      <button class="btn btn-outline mt-2" onclick="copyToClipboard()">📋 Kopiér til udklipsholder</button>
+    </div>`;
+  window._workoutSummary = summary;
+}
+
+function formatSummaryText(p) {
+  let t = `Træning ${p.date} — ${p.sessionName}\n`;
+  t += `Readiness: ${p.readiness} | Tid: ${p.startTime}–${p.endTime} (${p.durationMinutes} min)\n\n`;
+  p.exercises.forEach(ex => {
+    const sets = ex.sets.map(s => `${s.reps || '—'}${s.rpe ? ' @RPE'+s.rpe : ''}`).join(', ');
+    t += `${ex.name}: ${sets || 'sprunget over'}${ex.completed ? ' ✓' : ''}\n`;
+  });
+  return t;
+}
+
+function copyToClipboard() {
+  if (window._workoutSummary) {
+    navigator.clipboard.writeText(window._workoutSummary).then(() => {
+      const btn = event.target;
+      btn.textContent = '✓ Kopieret!';
+      setTimeout(() => { btn.textContent = '📋 Kopiér til udklipsholder'; }, 2000);
+    });
+  }
+}
+
+// ─── UTIL ───────────────────────────────────────────────────────────
+function formatDate() {
+  const d = new Date();
+  const days = ['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'];
+  const months = ['januar','februar','marts','april','maj','juni','juli','august','september','oktober','november','december'];
+  return `${days[d.getDay()]} ${d.getDate()}. ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// ─── INIT ───────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
