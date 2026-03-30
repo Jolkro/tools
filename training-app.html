@@ -302,6 +302,36 @@ function getWarmupDemo(text) {
 
 function getDemo(name) { const fn = DEMOS[name]; return fn ? fn() : null; }
 
+const EXERCISE_DESC = {
+  'armcirkler': 'Stå med armene ud til siden. Lav store cirkler fremad, derefter bagud. Hold core spændt og skuldrene nede. Varmer rotator cuff og skuldre op.',
+  'bodyweight squat': 'Stå skulderbredde. Sæt dig langsomt ned — hoften bagud, bryst oppe. Gå så dybt som din mobilitet tillader. Hælene i gulvet hele vejen.',
+  'shoulder tap': 'Plank-position. Løft én hånd og rør modsatte skulder. Skift side. Hold hoften stille — den må ikke rokke. Opvarmer core og skuldre.',
+  'cat-cow': 'Alle fire. Pust ind: svaj ryggen ned, kig op (cow). Pust ud: rund ryggen op, kig mod navlen (cat). Langsomt og flydende. Mobiliserer hele rygsøjlen.',
+  'hip hinge': 'Stå med kosteskaft langs ryggen (baghoved, øvre ryg, baller rører). Skub hoften bagud, lad overkroppen vippe fremad. Mærk stræk i baglårene. Stangen skal holde kontakt hele vejen.',
+  'scapular push': 'Push-up position med strakte arme. Uden at bøje albuerne: pres skulderbladene fra hinanden (protraction), derefter klem dem sammen (retraction). Aktiverer serratus anterior.',
+  'jumping jack': 'Spring ud med armene over hovedet og fødderne bredt. Spring tilbage med armene ned og fødderne samlet. Hold tempoet jævnt og land blødt.',
+  'lunge': 'Tag et skridt fremad, sænk bagerste knæ mod gulvet. Overkrop lodret, forreste knæ over anklen. Skub dig tilbage op. Skift ben.',
+  'inchworm': 'Stå oprejst. Bøj dig fremad, gå ud på hænderne til plank. Kort pause. Gå med hænderne tilbage til fødderne, rejs dig op. Varmer hele posterior kæde op.',
+  'hoftebøjer': 'Knæl på ét knæ, det andet ben foran med foden i gulvet. Skub hoften fremad til du mærker et stræk foran hoften. Hold stillingen og pust dybt. Åbner hoftebøjerne efter lang dag i stolen.',
+  'bryst-stræk': 'Stå i en dørkarm med albuen i 90°, underarmen mod karmen. Træd fremad til du mærker stræk over brystet. Hold og pust. Modvirker rundryg fra skærmen.',
+  'vejrtrækning': 'Sid eller lig komfortabelt. Pust dybt ind gennem næsen (4 sek), hold (2 sek), pust langsomt ud gennem munden (6 sek). Aktiverer det parasympatiske nervesystem.',
+  'hamstring': 'Sæt én fod fremad med strakt ben, tåen op. Bøj dig fremad fra hoften med flad ryg. Mærk strækket bag i låret. Hold stillingen og pust.',
+  'lat stræk': 'Grib fat i en dørkarm med én hånd over hovedhøjde. Læn dig væk fra armen og drej kroppen let. Mærk strækket langs siden af ryggen.',
+  'thoracic rotation': 'Lig på siden med knæene bøjet 90°. Hold knæene sammen, roter overkroppen og stræk den øverste arm ud til den modsatte side. Følg hånden med øjnene.',
+  'world\'s greatest': 'Stort skridt fremad i lunge. Sæt den ene hånd i gulvet, roter den anden arm mod loftet. Åbner hofter, thorax og hamstrings i én bevægelse. Den hedder "greatest stretch" af en grund.',
+  'dyb squat': 'Sænk dig ned i en dyb squat med fødderne lidt bredere end skulderbredde. Hold stillingen. Brug albuerne til at presse knæene udad. Mobiliserer hofter og ankler.',
+  'hip 90/90': 'Sid på gulvet med begge ben bøjet i 90°. Forreste ben foran dig, bagerste ben til siden. Hold ryggen ret og læn dig over det forreste ben. Åbner hofterotation.',
+  'lat-hang': 'Grib fat i en dørkarm over hovedhøjde. Hæng afslappet med let bøjede knæer. Lad tyngdekraften strække lats og rygsøjlen. Hold og pust.'
+};
+
+function getExerciseDesc(text) {
+  const t = text.toLowerCase();
+  for (const [key, desc] of Object.entries(EXERCISE_DESC)) {
+    if (t.includes(key)) return desc;
+  }
+  return null;
+}
+
 // ─── STATE ──────────────────────────────────────────────────────────
 const params = new URLSearchParams(location.search);
 let state = {
@@ -319,7 +349,8 @@ let state = {
   timerTotal: 0,
   timerInterval: null,
   showTips: false,
-  warmupDemoIndex: -1
+  warmupDemoIndex: -1,
+  cooldownDemoIndex: -1
 };
 
 function autoSession() {
@@ -444,9 +475,9 @@ function renderWarmup() {
             <div class="checklist-item ${state.warmupChecked.includes(i)?'checked':''}" onclick="toggleWarmup(${i})" style="margin-bottom:0">
               <div class="check">${state.warmupChecked.includes(i)?'✓':''}</div>
               <span style="flex:1">${ex}</span>
-              ${demoFn ? `<button onclick="event.stopPropagation();toggleWarmupDemo(${i})" style="background:none;border:none;color:var(--blue);font-size:.85rem;font-weight:600;padding:4px 8px;cursor:pointer;flex-shrink:0">${showDemo ? '▾' : '?'}</button>` : ''}
+              ${(demoFn || getExerciseDesc(ex)) ? `<button onclick="event.stopPropagation();toggleWarmupDemo(${i})" style="background:none;border:none;color:var(--blue);font-size:.85rem;font-weight:600;padding:4px 8px;cursor:pointer;flex-shrink:0">${showDemo ? '▾' : '?'}</button>` : ''}
             </div>
-            ${showDemo && demoFn ? `<div class="demo-container">${demoFn()}</div>` : ''}
+            ${showDemo ? `<div class="demo-container">${demoFn ? demoFn() : ''}${(() => { const d = getExerciseDesc(ex); return d ? '<p style="font-size:.8rem;color:var(--gray);margin-top:8px;text-align:left;line-height:1.5">' + d + '</p>' : ''; })()}</div>` : ''}
           </div>`;
         }).join('')}
       </div>
@@ -599,12 +630,20 @@ function renderCooldown() {
       <div class="card" style="border-left:4px solid var(--blue)">
         <h2>Nedkøling</h2>
         <p class="text-sm text-gray mb-3">Tag dig tid. Din krop har fortjent det.</p>
-        ${s.cooldown.exercises.map((ex, i) => `
-          <div class="checklist-item ${state.cooldownChecked.includes(i)?'checked':''}" onclick="toggleCooldown(${i})">
-            <div class="check">${state.cooldownChecked.includes(i)?'✓':''}</div>
-            <span>${ex}</span>
-          </div>
-        `).join('')}
+        ${s.cooldown.exercises.map((ex, i) => {
+          const demoFn = getWarmupDemo(ex);
+          const desc = getExerciseDesc(ex);
+          const showDemo = state.cooldownDemoIndex === i;
+          return `
+          <div style="margin-bottom:4px">
+            <div class="checklist-item ${state.cooldownChecked.includes(i)?'checked':''}" onclick="toggleCooldown(${i})" style="margin-bottom:0">
+              <div class="check">${state.cooldownChecked.includes(i)?'✓':''}</div>
+              <span style="flex:1">${ex}</span>
+              ${(demoFn || desc) ? `<button onclick="event.stopPropagation();toggleCooldownDemo(${i})" style="background:none;border:none;color:var(--blue);font-size:.85rem;font-weight:600;padding:4px 8px;cursor:pointer;flex-shrink:0">${showDemo ? '▾' : '?'}</button>` : ''}
+            </div>
+            ${showDemo ? `<div class="demo-container">${demoFn ? demoFn() : ''}${desc ? '<p style="font-size:.8rem;color:var(--gray);margin-top:8px;text-align:left;line-height:1.5">' + desc + '</p>' : ''}</div>` : ''}
+          </div>`;
+        }).join('')}
       </div>
       <button class="btn btn-green" onclick="finishWorkout()">
         ✓ Session færdig!
@@ -687,6 +726,7 @@ function startWorkout() {
   state.warmupChecked = [];
   state.cooldownChecked = [];
   state.warmupDemoIndex = -1;
+  state.cooldownDemoIndex = -1;
   state.screen = 'warmup';
   render();
 }
@@ -717,6 +757,7 @@ function startExercises() {
 function toggleTips() { state.showTips = !state.showTips; render(); }
 
 function toggleWarmupDemo(i) { state.warmupDemoIndex = state.warmupDemoIndex === i ? -1 : i; render(); }
+function toggleCooldownDemo(i) { state.cooldownDemoIndex = state.cooldownDemoIndex === i ? -1 : i; render(); }
 
 function goToSet(i) { state.setIndex = i; render(); }
 
