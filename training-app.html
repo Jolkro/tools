@@ -90,6 +90,9 @@ p{line-height:1.5}
   .progress-bar,.timer-ring .bg{background:#374151;stroke:#374151}
   .badge-gray{background:#374151;color:#d1d5db}
 }
+.demo-container{background:var(--light);border-radius:12px;padding:12px;margin:8px 0;text-align:center;overflow:hidden}
+.demo-container svg{color:var(--blue)}
+@media(prefers-color-scheme:dark){.demo-container{background:#374151}.demo-container svg{color:#60a5fa}}
 </style>
 </head>
 <body>
@@ -192,6 +195,113 @@ const READINESS = {
   recovery:{label:"Hviledag",emoji:"🔴",color:"red",adj:"Spring styrke over. Mobility flow eller gåtur."}
 };
 
+// ─── EXERCISE DEMOS ──────────────────────────────────────────────────
+function BDF(fr,w=80,h=120,dur=2.5){
+  const v=i=>fr.map(f=>f[i]).join(';'),sp=Array(fr.length-1).fill('.4 0 .6 1').join(';');
+  const A=(a,i)=>`<animate attributeName="${a}" values="${v(i)}" dur="${dur}s" repeatCount="indefinite" calcMode="spline" keySplines="${sp}"/>`;
+  const L=(a,b,c,d,sw=2.5)=>`<line stroke="currentColor" stroke-width="${sw}" stroke-linecap="round">${A('x1',a)}${A('y1',b)}${A('x2',c)}${A('y2',d)}</line>`;
+  return`<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="max-width:180px;max-height:150px;display:block;margin:0 auto;color:var(--blue)"><line x1="5" y1="${h-5}" x2="${w-5}" y2="${h-5}" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4"/><circle r="6" fill="none" stroke="currentColor" stroke-width="2.5">${A('cx',0)}${A('cy',1)}</circle>${L(2,3,4,5)}${L(2,3,6,7,2)}${L(2,3,8,9,2)}${L(4,5,10,11)}${L(10,11,12,13)}${L(4,5,14,15)}${L(14,15,16,17)}</svg>`;
+}
+function BDS(fr,w=130,h=75,dur=2.5,extra=''){
+  const v=i=>fr.map(f=>f[i]).join(';'),sp=Array(fr.length-1).fill('.4 0 .6 1').join(';');
+  const A=(a,i)=>`<animate attributeName="${a}" values="${v(i)}" dur="${dur}s" repeatCount="indefinite" calcMode="spline" keySplines="${sp}"/>`;
+  const L=(a,b,c,d,sw=2.5)=>`<line stroke="currentColor" stroke-width="${sw}" stroke-linecap="round">${A('x1',a)}${A('y1',b)}${A('x2',c)}${A('y2',d)}</line>`;
+  return`<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="max-width:180px;max-height:150px;display:block;margin:0 auto;color:var(--blue)"><line x1="5" y1="${h-5}" x2="${w-5}" y2="${h-5}" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4"/><circle r="6" fill="none" stroke="currentColor" stroke-width="2.5">${A('cx',0)}${A('cy',1)}</circle>${L(2,3,4,5)}${L(2,3,6,7,2)}${L(4,5,8,9)}${L(8,9,10,11)}${extra}</svg>`;
+}
+
+const DEMOS = {
+  'Bodyweight Squat': ()=>BDF([
+    [40,10,40,20,40,55,20,48,60,48,32,78,30,110,48,78,50,110],
+    [40,35,40,42,40,70,15,55,65,55,22,90,25,110,58,90,55,110],
+    [40,10,40,20,40,55,20,48,60,48,32,78,30,110,48,78,50,110]]),
+  'Push-ups': ()=>BDS([
+    [18,18,28,22,88,24,26,58,102,40,118,58],
+    [18,35,28,38,88,40,26,58,102,52,118,58],
+    [18,18,28,22,88,24,26,58,102,40,118,58]],130,75),
+  'Pike Push-ups': ()=>BDS([
+    [15,28,22,34,68,8,18,68,82,28,98,68],
+    [15,48,22,48,68,8,18,68,82,28,98,68],
+    [15,28,22,34,68,8,18,68,82,28,98,68]],110,85),
+  'Split Squat': ()=>BDF([
+    [40,10,40,20,40,55,25,45,55,45,30,78,25,110,50,78,55,110],
+    [40,28,40,38,40,68,25,55,55,55,25,90,20,110,55,90,58,108],
+    [40,10,40,20,40,55,25,45,55,45,30,78,25,110,50,78,55,110]]),
+  'Dead Bug': ()=>BDS([
+    [110,32,100,32,50,32,92,10,35,10,22,28],
+    [110,32,100,32,50,32,118,34,30,34,10,34],
+    [110,32,100,32,50,32,92,10,35,10,22,28]],130,55),
+  'Hip Hinge (RDL-mønster)': ()=>BDS([
+    [40,8,40,18,40,52,28,42,43,75,43,108],
+    [18,25,24,30,48,52,8,38,48,75,45,108],
+    [40,8,40,18,40,52,28,42,43,75,43,108]],80,118),
+  'Inverted Row (under bord)': ()=>BDS([
+    [18,42,28,42,90,40,26,58,102,52,118,58],
+    [18,18,28,20,90,22,26,8,102,35,118,58],
+    [18,42,28,42,90,40,26,58,102,52,118,58]],140,72,2.5,
+    '<line x1="20" y1="6" x2="120" y2="6" stroke="#a1a1aa" stroke-width="3"/><line x1="20" y1="6" x2="20" y2="58" stroke="#a1a1aa" stroke-width="2"/><line x1="120" y1="6" x2="120" y2="58" stroke="#a1a1aa" stroke-width="2"/>'),
+  'Glute Bridge': ()=>BDS([
+    [110,45,100,45,65,45,95,50,42,28,22,45],
+    [110,45,100,42,65,18,95,50,42,18,22,45],
+    [110,45,100,45,65,45,95,50,42,28,22,45]],130,60),
+  'Reverse Lunge': ()=>BDF([
+    [40,10,40,20,40,55,25,45,55,45,34,78,34,110,46,78,46,110],
+    [40,28,40,38,40,68,25,55,55,55,28,90,24,110,55,90,58,108],
+    [40,10,40,20,40,55,25,45,55,45,34,78,34,110,46,78,46,110]]),
+  'Superman Hold': ()=>BDS([
+    [15,38,25,38,85,38,5,42,95,42,115,42],
+    [15,20,25,25,85,25,5,12,95,18,115,12],
+    [15,38,25,38,85,38,5,42,95,42,115,42]],130,55),
+  'Plank': ()=>BDS([
+    [18,20,28,24,88,28,24,55,100,42,118,55],
+    [18,22,28,26,88,30,24,55,100,44,118,55],
+    [18,20,28,24,88,28,24,55,100,42,118,55]],130,68,3),
+  'Squat til Calf Raise': ()=>BDF([
+    [40,10,40,20,40,55,20,48,60,48,32,78,30,110,48,78,50,110],
+    [40,35,40,42,40,70,15,55,65,55,22,90,25,110,58,90,55,110],
+    [40,10,40,20,40,55,20,48,60,48,32,78,30,110,48,78,50,110],
+    [40,5,40,15,40,48,18,38,62,38,34,72,36,100,46,72,44,100]],80,120,3),
+  'Push-up til Downward Dog': ()=>BDS([
+    [18,18,28,22,90,26,26,62,104,42,120,62],
+    [18,38,28,40,90,42,26,62,104,52,120,62],
+    [38,48,48,52,78,8,42,62,92,28,108,62],
+    [18,18,28,22,90,26,26,62,104,42,120,62]],140,78,4),
+  'Reverse Lunge til Knee Drive': ()=>BDF([
+    [40,10,40,20,40,55,25,45,55,45,34,78,34,110,46,78,46,110],
+    [40,28,40,38,40,68,25,55,55,55,28,90,24,110,55,90,58,108],
+    [40,10,40,20,40,55,20,32,60,32,34,78,34,110,46,35,50,55]],80,120,3),
+  'Wall Sit': ()=>BDS([
+    [65,22,66,30,68,58,50,50,48,58,48,110],
+    [65,24,66,32,68,60,50,52,46,60,46,110],
+    [65,22,66,30,68,58,50,50,48,58,48,110]],80,120,3,
+    '<line x1="70" y1="5" x2="70" y2="115" stroke="#a1a1aa" stroke-width="3"/>'),
+  'Bear Crawl': ()=>BDS([
+    [15,15,25,20,68,22,18,48,75,35,88,48],
+    [15,15,25,20,68,22,38,48,55,35,72,48],
+    [15,15,25,20,68,22,18,48,75,35,88,48]],110,60,2),
+  'Bird-Dog': ()=>BDS([
+    [18,18,28,22,72,26,25,50,78,38,88,50],
+    [18,18,28,22,72,26,5,8,78,38,112,15],
+    [18,18,28,22,72,26,25,50,78,38,88,50]],130,58)
+};
+
+function getWarmupDemo(text) {
+  const t = text.toLowerCase();
+  if (t.includes('squat')) return DEMOS['Bodyweight Squat'];
+  if (t.includes('push-up') || t.includes('pushup') || t.includes('scapular push')) return DEMOS['Push-ups'];
+  if (t.includes('shoulder tap') || t.includes('plank')) return DEMOS['Plank'];
+  if (t.includes('hip hinge')) return DEMOS['Hip Hinge (RDL-mønster)'];
+  if (t.includes('lunge')) return DEMOS['Reverse Lunge'];
+  if (t.includes('bird-dog')) return DEMOS['Bird-Dog'];
+  if (t.includes('superman')) return DEMOS['Superman Hold'];
+  if (t.includes('cat-cow')) return ()=>BDS([[15,18,22,22,72,15,18,50,78,35,92,50],[15,32,22,28,72,32,18,50,78,42,92,50],[15,18,22,22,72,15,18,50,78,35,92,50]],110,60);
+  if (t.includes('jumping jack')) return ()=>BDF([[40,10,40,20,40,55,22,50,58,50,36,78,36,110,44,78,44,110],[40,10,40,20,40,55,12,18,68,18,22,78,18,110,58,78,62,110],[40,10,40,20,40,55,22,50,58,50,36,78,36,110,44,78,44,110]],80,120,1.5);
+  if (t.includes('inchworm')) return ()=>BDS([[40,8,40,18,40,52,28,42,43,75,43,108],[15,28,22,32,68,12,18,68,80,30,95,68],[40,8,40,18,40,52,28,42,43,75,43,108]],110,80,3);
+  if (t.includes('armcirkler')) return ()=>BDF([[40,10,40,20,40,55,12,18,68,18,34,78,34,110,46,78,46,110],[40,10,40,20,40,55,12,55,68,55,34,78,34,110,46,78,46,110],[40,10,40,20,40,55,12,18,68,18,34,78,34,110,46,78,46,110]],80,120,2);
+  return null;
+}
+
+function getDemo(name) { const fn = DEMOS[name]; return fn ? fn() : null; }
+
 // ─── STATE ──────────────────────────────────────────────────────────
 const params = new URLSearchParams(location.search);
 let state = {
@@ -208,7 +318,8 @@ let state = {
   timerSeconds: 0,
   timerTotal: 0,
   timerInterval: null,
-  showTips: false
+  showTips: false,
+  warmupDemoIndex: -1
 };
 
 function autoSession() {
@@ -325,12 +436,19 @@ function renderWarmup() {
       <div class="card" style="border-left:4px solid var(--orange)">
         <h2>Opvarmning (${s.warmup.duration})</h2>
         <p class="text-sm text-gray mb-3">Spring ALDRIG opvarmningen over.</p>
-        ${s.warmup.exercises.map((ex, i) => `
-          <div class="checklist-item ${state.warmupChecked.includes(i)?'checked':''}" onclick="toggleWarmup(${i})">
-            <div class="check">${state.warmupChecked.includes(i)?'✓':''}</div>
-            <span>${ex}</span>
-          </div>
-        `).join('')}
+        ${s.warmup.exercises.map((ex, i) => {
+          const demoFn = getWarmupDemo(ex);
+          const showDemo = state.warmupDemoIndex === i;
+          return `
+          <div style="margin-bottom:4px">
+            <div class="checklist-item ${state.warmupChecked.includes(i)?'checked':''}" onclick="toggleWarmup(${i})" style="margin-bottom:0">
+              <div class="check">${state.warmupChecked.includes(i)?'✓':''}</div>
+              <span style="flex:1">${ex}</span>
+              ${demoFn ? `<button onclick="event.stopPropagation();toggleWarmupDemo(${i})" style="background:none;border:none;color:var(--blue);font-size:.85rem;font-weight:600;padding:4px 8px;cursor:pointer;flex-shrink:0">${showDemo ? '▾' : '?'}</button>` : ''}
+            </div>
+            ${showDemo && demoFn ? `<div class="demo-container">${demoFn()}</div>` : ''}
+          </div>`;
+        }).join('')}
       </div>
       <button class="btn btn-orange" onclick="startExercises()">
         Klar til øvelser →
@@ -341,6 +459,7 @@ function renderWarmup() {
 function renderExercise() {
   const s = getSession();
   const ex = s.exercises[state.exIndex];
+  const demo = getDemo(ex.name);
   const numSets = adjustedSets(ex);
   const rpe = adjustedRPE(ex);
   const exLog = state.log[state.exIndex] || { sets: [] };
@@ -370,6 +489,8 @@ function renderExercise() {
           ${rpe ? `<span class="badge badge-orange">RPE ${rpe}</span>` : ''}
           <span class="badge badge-blue">${ex.tempo}</span>
         </div>
+
+        ${demo ? `<div class="demo-container">${demo}</div>` : ''}
 
         <p class="text-sm mt-3">${ex.desc}</p>
 
@@ -565,6 +686,7 @@ function startWorkout() {
   state.log = {};
   state.warmupChecked = [];
   state.cooldownChecked = [];
+  state.warmupDemoIndex = -1;
   state.screen = 'warmup';
   render();
 }
@@ -593,6 +715,8 @@ function startExercises() {
 }
 
 function toggleTips() { state.showTips = !state.showTips; render(); }
+
+function toggleWarmupDemo(i) { state.warmupDemoIndex = state.warmupDemoIndex === i ? -1 : i; render(); }
 
 function goToSet(i) { state.setIndex = i; render(); }
 
