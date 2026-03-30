@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Check-in</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--blue:#3b82f6;--green:#22c55e;--orange:#f97316;--red:#ef4444;--purple:#8b5cf6;--gray:#6b7280;--dark:#111827;--light:#f9fafb}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f3f4f6;color:var(--dark);min-height:100vh;-webkit-tap-highlight-color:transparent}
+.app{max-width:480px;margin:0 auto;padding:16px;padding-bottom:60px}
+.card{background:#fff;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+h1{font-size:1.5rem;font-weight:800;line-height:1.2}
+h2{font-size:1.1rem;font-weight:700;margin-bottom:12px}
+.text-sm{font-size:.875rem}
+.text-gray{color:var(--gray)}
+.text-center{text-align:center}
+.mt-2{margin-top:8px}.mt-3{margin-top:12px}.mt-4{margin-top:16px}
+.mb-2{margin-bottom:8px}.mb-3{margin-bottom:12px}
+.flex{display:flex}.items-center{align-items:center}.justify-between{justify-content:space-between}.gap-2{gap:8px}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.header-icon{font-size:1.8rem}
+.header-sub{font-size:.85rem;color:var(--gray);margin-top:2px}
+
+/* Rating grid — 5 big tap targets */
+.rating-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:8px}
+.rating-btn{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:14px 4px;border-radius:14px;border:2px solid #e5e7eb;background:#fff;
+  font-weight:700;font-size:1.5rem;cursor:pointer;transition:all .15s;
+  -webkit-user-select:none;user-select:none;min-height:72px;
+}
+.rating-btn .label{font-size:.65rem;font-weight:600;color:var(--gray);margin-top:4px;text-transform:uppercase;letter-spacing:.02em}
+.rating-btn:active{transform:scale(.95)}
+.rating-btn.selected{border-color:var(--blue);background:#dbeafe;color:#1d4ed8}
+.rating-btn.selected .label{color:#1d4ed8}
+
+/* Alcohol buttons — 3 wide */
+.alcohol-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.alcohol-btn{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:16px 8px;border-radius:14px;border:2px solid #e5e7eb;background:#fff;
+  font-weight:700;font-size:1.3rem;cursor:pointer;transition:all .15s;
+  -webkit-user-select:none;user-select:none;min-height:80px;
+}
+.alcohol-btn .label{font-size:.75rem;font-weight:600;color:var(--gray);margin-top:6px}
+.alcohol-btn:active{transform:scale(.95)}
+.alcohol-btn.selected{border-color:var(--blue);background:#dbeafe;color:#1d4ed8}
+.alcohol-btn.selected .label{color:#1d4ed8}
+
+/* Submit button */
+.btn-submit{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:18px;border-radius:14px;font-size:1.1rem;font-weight:700;
+  border:none;cursor:pointer;transition:transform .1s,opacity .1s;
+  -webkit-appearance:none;background:var(--dark);color:#fff;margin-top:8px;
+}
+.btn-submit:active{transform:scale(.97);opacity:.9}
+.btn-submit:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-submit.success{background:var(--green)}
+.btn-submit.error{background:var(--red)}
+
+/* Type selector */
+.type-toggle{display:flex;gap:0;background:#e5e7eb;border-radius:12px;padding:3px;margin-bottom:20px}
+.type-btn{flex:1;padding:10px;border:none;background:transparent;border-radius:10px;font-weight:700;font-size:.9rem;cursor:pointer;transition:all .15s;color:var(--gray)}
+.type-btn.active{background:#fff;color:var(--dark);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+/* Status message */
+.status{padding:14px;border-radius:12px;font-size:.9rem;font-weight:600;text-align:center;margin-top:12px}
+.status-ok{background:#dcfce7;color:#166534}
+.status-err{background:#fee2e2;color:#991b1b}
+
+/* Done screen */
+.done-screen{text-align:center;padding:40px 20px}
+.done-icon{font-size:4rem;margin-bottom:16px}
+.done-title{font-size:1.5rem;font-weight:800;margin-bottom:8px}
+.done-sub{color:var(--gray);font-size:.95rem}
+
+/* Dark mode */
+@media(prefers-color-scheme:dark){
+  body{background:#111827;color:#f9fafb}
+  .card{background:#1f2937;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+  .rating-btn,.alcohol-btn{background:#374151;border-color:#4b5563;color:#f9fafb}
+  .rating-btn .label,.alcohol-btn .label{color:#9ca3af}
+  .rating-btn.selected,.alcohol-btn.selected{border-color:var(--blue);background:#1e3a5f;color:#93c5fd}
+  .rating-btn.selected .label,.alcohol-btn.selected .label{color:#93c5fd}
+  .type-toggle{background:#374151}
+  .type-btn{color:#9ca3af}
+  .type-btn.active{background:#1f2937;color:#f9fafb}
+  .btn-submit{background:#f9fafb;color:#111827}
+  h2{color:#d1d5db}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+const app = document.getElementById('app');
+
+// Parse URL params
+const params = new URLSearchParams(window.location.search);
+let type = params.get('type') || ''; // morning or evening
+const webhook = params.get('webhook') || 'https://eo1z8olrm9ptxdd.m.pipedream.net';
+
+// State
+const state = {
+  morning: { energy: 0, mood: 0, motivation: 0 },
+  evening: { effectiveness: 0, irritability: 0, alcohol: '' },
+  submitted: false,
+  sending: false
+};
+
+// Morning questions
+const morningQs = [
+  { key: 'energy', label: 'Energi', emojis: ['😴','🥱','😐','⚡','🔥'], labels: ['Lav','Træt','Ok','God','Top'] },
+  { key: 'mood', label: 'Humør', emojis: ['😔','😐','🙂','😊','😄'], labels: ['Lav','Meh','Ok','Godt','Super'] },
+  { key: 'motivation', label: 'Træningsmotivation', emojis: ['🛋️','🤷','👌','💪','🔥'], labels: ['Nul','Lidt','Ok','Klar','Max'] }
+];
+
+// Evening questions
+const eveningQs = [
+  { key: 'effectiveness', label: 'Effektivitet i dag', emojis: ['📉','📊','📈','🎯','🚀'], labels: ['Ringe','Under','Ok','God','Fantastisk'] },
+  { key: 'irritability', label: 'Irritabilitet', emojis: ['😌','😐','😤','😠','🤬'], labels: ['Rolig','Ok','Lidt','Meget','Ude af kontrol'] }
+];
+
+function render() {
+  if (state.submitted) {
+    renderDone();
+    return;
+  }
+
+  const isMorning = type === 'morning';
+  const isEvening = type === 'evening';
+  const showToggle = !type;
+
+  let html = '';
+
+  // Header
+  html += `<div class="header">
+    <div>
+      <h1>${isMorning ? '☀️ Morgen' : isEvening ? '🌙 Aften' : '📋'} Check-in</h1>
+      <div class="header-sub">${new Date().toLocaleDateString('da-DK', {weekday:'long', day:'numeric', month:'long'})}</div>
+    </div>
+  </div>`;
+
+  // Type toggle if no type in URL
+  if (showToggle) {
+    const mt = type === 'morning' || !type ? 'morning' : '';
+    const et = type === 'evening' ? 'evening' : '';
+    html += `<div class="type-toggle">
+      <button class="type-btn ${type !== 'evening' ? 'active' : ''}" onclick="setType('morning')">☀️ Morgen</button>
+      <button class="type-btn ${type === 'evening' ? 'active' : ''}" onclick="setType('evening')">🌙 Aften</button>
+    </div>`;
+    if (!type) type = 'morning';
+  }
+
+  // Questions
+  if (type === 'morning') {
+    morningQs.forEach(q => {
+      html += renderRatingCard(q, state.morning);
+    });
+    html += renderSubmitBtn(state.morning.energy && state.morning.mood && state.morning.motivation);
+  } else {
+    eveningQs.forEach(q => {
+      html += renderRatingCard(q, state.evening);
+    });
+    html += renderAlcoholCard();
+    html += renderSubmitBtn(state.evening.effectiveness && state.evening.irritability && state.evening.alcohol);
+  }
+
+  app.innerHTML = html;
+}
+
+function renderRatingCard(q, data) {
+  let btns = '';
+  for (let i = 1; i <= 5; i++) {
+    const sel = data[q.key] === i ? 'selected' : '';
+    btns += `<button class="rating-btn ${sel}" onclick="setRating('${q.key}',${i})">
+      <span>${q.emojis[i-1]}</span>
+      <span class="label">${q.labels[i-1]}</span>
+    </button>`;
+  }
+  return `<div class="card">
+    <h2>${q.label}</h2>
+    <div class="rating-grid">${btns}</div>
+  </div>`;
+}
+
+function renderAlcoholCard() {
+  const options = [
+    { value: 'none', emoji: '🚫', label: 'Ingen' },
+    { value: 'light', emoji: '🍺', label: '1-2 drinks' },
+    { value: 'heavy', emoji: '🍷', label: '3+ drinks' }
+  ];
+  let btns = '';
+  options.forEach(o => {
+    const sel = state.evening.alcohol === o.value ? 'selected' : '';
+    btns += `<button class="alcohol-btn ${sel}" onclick="setAlcohol('${o.value}')">
+      <span>${o.emoji}</span>
+      <span class="label">${o.label}</span>
+    </button>`;
+  });
+  return `<div class="card">
+    <h2>Alkohol i aften?</h2>
+    <div class="alcohol-grid">${btns}</div>
+  </div>`;
+}
+
+function renderSubmitBtn(ready) {
+  if (state.sending) {
+    return `<button class="btn-submit" disabled>Sender...</button>`;
+  }
+  return `<button class="btn-submit" ${ready ? '' : 'disabled'} onclick="submit()">
+    Send check-in →
+  </button>`;
+}
+
+function renderDone() {
+  const isMorning = type === 'morning';
+  app.innerHTML = `<div class="done-screen">
+    <div class="done-icon">${isMorning ? '☀️' : '🌙'}</div>
+    <div class="done-title">Check-in sendt!</div>
+    <div class="done-sub">${isMorning ? 'God morgen — hav en god dag!' : 'God aften — sov godt!'}</div>
+  </div>`;
+}
+
+// Actions
+window.setType = function(t) {
+  type = t;
+  render();
+};
+
+window.setRating = function(key, val) {
+  if (type === 'morning') {
+    state.morning[key] = val;
+  } else {
+    state.evening[key] = val;
+  }
+  render();
+};
+
+window.setAlcohol = function(val) {
+  state.evening.alcohol = val;
+  render();
+};
+
+window.submit = async function() {
+  state.sending = true;
+  render();
+
+  const today = new Date().toISOString().slice(0, 10);
+  let payload;
+
+  if (type === 'morning') {
+    payload = {
+      date: today,
+      source: 'checkin',
+      time_of_day: 'morning',
+      energy: state.morning.energy,
+      mood: state.morning.mood,
+      motivation: state.morning.motivation
+    };
+  } else {
+    payload = {
+      date: today,
+      source: 'checkin',
+      time_of_day: 'evening',
+      effectiveness: state.evening.effectiveness,
+      irritability: state.evening.irritability,
+      alcohol: state.evening.alcohol
+    };
+  }
+
+  try {
+    const res = await fetch(webhook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      state.submitted = true;
+      // Vibrate on success if supported
+      if (navigator.vibrate) navigator.vibrate(100);
+    } else {
+      throw new Error('HTTP ' + res.status);
+    }
+  } catch (e) {
+    state.sending = false;
+    alert('Kunne ikke sende: ' + e.message + '\nPrøv igen.');
+  }
+
+  render();
+};
+
+// Init
+render();
+</script>
+</body>
+</html>
