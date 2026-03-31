@@ -350,8 +350,53 @@ let state = {
   timerInterval: null,
   showTips: false,
   warmupDemoIndex: -1,
-  cooldownDemoIndex: -1
+  cooldownDemoIndex: -1,
+  wakeLock: null,
+  wakeLockActive: false
 };
+
+// ─── WAKE LOCK ─────────────────────────────────────────────────────
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return false;
+  try {
+    state.wakeLock = await navigator.wakeLock.request('screen');
+    state.wakeLockActive = true;
+    state.wakeLock.addEventListener('release', () => {
+      state.wakeLockActive = false;
+      render();
+    });
+    render();
+    return true;
+  } catch (e) {
+    console.log('Wake Lock failed:', e);
+    state.wakeLockActive = false;
+    return false;
+  }
+}
+
+async function releaseWakeLock() {
+  if (state.wakeLock) {
+    await state.wakeLock.release();
+    state.wakeLock = null;
+  }
+  state.wakeLockActive = false;
+  render();
+}
+
+async function toggleWakeLock() {
+  if (state.wakeLockActive) {
+    await releaseWakeLock();
+  } else {
+    await requestWakeLock();
+  }
+}
+
+// Re-acquire wake lock when returning to the tab (iOS releases it on tab switch)
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && state.wakeLockActive && state.wakeLock?.released !== false) {
+    await requestWakeLock();
+  }
+});
 
 function autoSession() {
   const d = new Date().getDay(); // 0=Sun
@@ -404,6 +449,16 @@ function renderHome() {
             </div>
           `).join('')}
         </div>
+        ${'wakeLock' in navigator ? `
+        <div class="flex justify-between items-center mt-3" style="padding:14px;background:var(--light);border-radius:14px;cursor:pointer;-webkit-user-select:none" onclick="toggleWakeLock()">
+          <div class="flex items-center gap-2">
+            <span>${state.wakeLockActive ? '☀️' : '💤'}</span>
+            <span style="font-weight:600;font-size:.875rem">Hold skærm tændt</span>
+          </div>
+          <div style="width:44px;height:26px;border-radius:13px;background:${state.wakeLockActive ? 'var(--green)' : '#d1d5db'};position:relative;transition:background .2s">
+            <div style="width:22px;height:22px;border-radius:50%;background:#fff;position:absolute;top:2px;${state.wakeLockActive ? 'right:2px' : 'left:2px'};transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+          </div>
+        </div>` : ''}
         <button class="btn btn-red mt-3" onclick="startMobility()">Start Mobility Flow</button>
       </div>`;
     return;
@@ -449,6 +504,20 @@ function renderHome() {
           <option value="recovery" ${state.readiness==='recovery'?'selected':''}>🔴 Hviledag</option>
         </select>
       </div>
+
+      ${'wakeLock' in navigator ? `
+      <div class="card flex justify-between items-center" style="padding:14px 20px;cursor:pointer;-webkit-user-select:none;user-select:none" onclick="toggleWakeLock()">
+        <div class="flex items-center gap-2">
+          <span style="font-size:1.2rem">${state.wakeLockActive ? '☀️' : '💤'}</span>
+          <div>
+            <span style="font-weight:600;font-size:.9rem">Hold skærm tændt</span>
+            <p class="text-xs text-gray mt-1">Forhindrer skærmen i at slukke under træning</p>
+          </div>
+        </div>
+        <div style="width:44px;height:26px;border-radius:13px;background:${state.wakeLockActive ? 'var(--green)' : '#d1d5db'};position:relative;transition:background .2s">
+          <div style="width:22px;height:22px;border-radius:50%;background:#fff;position:absolute;top:2px;${state.wakeLockActive ? 'right:2px' : 'left:2px'};transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+        </div>
+      </div>` : ''}
 
       <button class="btn btn-primary mt-3" onclick="startWorkout()">
         Start træning →
@@ -717,7 +786,7 @@ function renderMobility() {
 // ─── ACTIONS ────────────────────────────────────────────────────────
 function changeSession(key) { state.sessionKey = key; state.log = {}; render(); }
 function changeReadiness(val) { state.readiness = val; state.log = {}; render(); }
-function goHome() { clearTimer(); state.screen = 'home'; state.exIndex = 0; state.setIndex = 0; state.showTips = false; render(); }
+function goHome() { clearTimer(); releaseWakeLock(); state.screen = 'home'; state.exIndex = 0; state.setIndex = 0; state.showTips = false; render(); }
 function startMobility() { state.screen = 'mobility'; render(); }
 
 function startWorkout() {
