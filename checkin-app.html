@@ -52,6 +52,32 @@ h2{font-size:1.1rem;font-weight:700;margin-bottom:12px}
 .alcohol-btn.selected{border-color:var(--blue);background:#dbeafe;color:#1d4ed8}
 .alcohol-btn.selected .label{color:#1d4ed8}
 
+/* Drinks slider */
+.drinks-slider{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:24px;padding:20px;background:#f9fafb;border-radius:14px}
+.drinks-btn{
+  display:flex;align-items:center;justify-content:center;
+  width:48px;height:48px;border-radius:12px;border:2px solid #e5e7eb;background:#fff;
+  font-weight:700;font-size:1.4rem;cursor:pointer;transition:all .15s;
+  color:var(--dark);
+}
+.drinks-btn:active{transform:scale(.95)}
+.drinks-btn:disabled{opacity:.4;cursor:not-allowed}
+.drinks-display{
+  text-align:center;min-width:80px;
+}
+.drinks-display .number{
+  font-size:2.2rem;font-weight:800;color:var(--dark);line-height:1;
+}
+.drinks-display .unit{
+  font-size:.75rem;color:var(--gray);font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:.02em;
+}
+
+@media(prefers-color-scheme:dark){
+  .drinks-slider{background:#374151}
+  .drinks-btn{background:#1f2937;border-color:#4b5563;color:#f9fafb}
+  .drinks-display .number{color:#f9fafb}
+}
+
 /* Submit button */
 .btn-submit{
   display:flex;align-items:center;justify-content:center;gap:8px;
@@ -110,7 +136,7 @@ const webhook = params.get('webhook') || 'https://eo1z8olrm9ptxdd.m.pipedream.ne
 // State
 const state = {
   morning: { energy: 0, mood: 0, motivation: 0 },
-  evening: { effectiveness: 0, irritability: 0, alcohol: '' },
+  evening: { effectiveness: 0, irritability: 0, alcohol: '', drinks: 0 },
   submitted: false,
   sending: false
 };
@@ -170,7 +196,9 @@ function render() {
       html += renderRatingCard(q, state.evening);
     });
     html += renderAlcoholCard();
-    html += renderSubmitBtn(state.evening.effectiveness && state.evening.irritability && state.evening.alcohol);
+    const eveningComplete = state.evening.effectiveness && state.evening.irritability && state.evening.alcohol &&
+                           (state.evening.alcohol === 'none' || state.evening.drinks > 0);
+    html += renderSubmitBtn(eveningComplete);
   }
 
   app.innerHTML = html;
@@ -194,8 +222,8 @@ function renderRatingCard(q, data) {
 function renderAlcoholCard() {
   const options = [
     { value: 'none', emoji: '🚫', label: 'Ingen' },
-    { value: 'light', emoji: '🍺', label: '1-2 drinks' },
-    { value: 'heavy', emoji: '🍷', label: '3+ drinks' }
+    { value: 'light', emoji: '🍺', label: 'Lettere' },
+    { value: 'heavy', emoji: '🍷', label: 'Mere' }
   ];
   let btns = '';
   options.forEach(o => {
@@ -205,9 +233,26 @@ function renderAlcoholCard() {
       <span class="label">${o.label}</span>
     </button>`;
   });
+
+  let sliderHTML = '';
+  if (state.evening.alcohol === 'light' || state.evening.alcohol === 'heavy') {
+    const canDecrease = state.evening.drinks > 1;
+    const canIncrease = state.evening.drinks < 10;
+    sliderHTML = `
+    <div class="drinks-slider">
+      <button class="drinks-btn" ${canDecrease ? '' : 'disabled'} onclick="adjustDrinks(-1)">−</button>
+      <div class="drinks-display">
+        <div class="number">${state.evening.drinks}</div>
+        <div class="unit">drinks</div>
+      </div>
+      <button class="drinks-btn" ${canIncrease ? '' : 'disabled'} onclick="adjustDrinks(1)">+</button>
+    </div>`;
+  }
+
   return `<div class="card">
     <h2>Alkohol i aften?</h2>
     <div class="alcohol-grid">${btns}</div>
+    ${sliderHTML}
   </div>`;
 }
 
@@ -246,7 +291,22 @@ window.setRating = function(key, val) {
 
 window.setAlcohol = function(val) {
   state.evening.alcohol = val;
+  if (val === 'none') {
+    state.evening.drinks = 0;
+  } else if (val === 'light' && state.evening.drinks === 0) {
+    state.evening.drinks = 1;
+  } else if (val === 'heavy' && state.evening.drinks < 3) {
+    state.evening.drinks = 3;
+  }
   render();
+};
+
+window.adjustDrinks = function(delta) {
+  const newVal = state.evening.drinks + delta;
+  if (newVal >= 1 && newVal <= 10) {
+    state.evening.drinks = newVal;
+    render();
+  }
 };
 
 window.submit = async function() {
@@ -272,7 +332,8 @@ window.submit = async function() {
       time_of_day: 'evening',
       effectiveness: state.evening.effectiveness,
       irritability: state.evening.irritability,
-      alcohol: state.evening.alcohol
+      alcohol: state.evening.alcohol,
+      drinks: state.evening.drinks
     };
   }
 

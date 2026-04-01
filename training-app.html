@@ -93,6 +93,9 @@ p{line-height:1.5}
 .demo-container{background:var(--light);border-radius:12px;padding:12px;margin:8px 0;text-align:center;overflow:hidden}
 .demo-container svg{color:var(--blue)}
 @media(prefers-color-scheme:dark){.demo-container{background:#374151}.demo-container svg{color:#60a5fa}}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+@keyframes setComplete{0%{transform:scale(0.8);opacity:0}50%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+@keyframes exerciseComplete{0%{background-color:var(--green);opacity:1}100%{background-color:transparent;opacity:0}}
 </style>
 </head>
 <body>
@@ -342,6 +345,7 @@ let state = {
   exIndex: 0,
   setIndex: 0,
   startTime: null,
+  workoutTimerInterval: null,
   warmupChecked: [],
   cooldownChecked: [],
   log: {}, // { exIndex: { sets: [{reps,rpe},...], completed:bool } }
@@ -352,7 +356,8 @@ let state = {
   warmupDemoIndex: -1,
   cooldownDemoIndex: -1,
   wakeLock: null,
-  wakeLockActive: false
+  wakeLockActive: false,
+  totalSetsCompleted: 0
 };
 
 // ─── WAKE LOCK ─────────────────────────────────────────────────────
@@ -432,6 +437,24 @@ function renderHome() {
   const r = getReadiness();
   const colorMap = {blue:'badge-blue',green:'badge-green',purple:'badge-purple',orange:'badge-orange',red:'badge-red'};
 
+  // Calculate estimated workout duration
+  function estimateWorkoutDuration(session, readiness) {
+    const avgSetTime = 45; // seconds per set (including reps)
+    const avgRestTime = 75; // seconds between sets
+    let totalSets = 0;
+    session.exercises.forEach(ex => {
+      const sets = readiness === 'easy' ? Math.max(ex.sets - 1, 2) : ex.sets;
+      totalSets += sets;
+    });
+    const warmup = 5 * 60;
+    const cooldown = 5 * 60;
+    const totalExerciseTime = totalSets * (avgSetTime + avgRestTime);
+    return Math.round((warmup + totalExerciseTime + cooldown) / 60);
+  }
+
+  const estimatedMinutes = estimateWorkoutDuration(s, state.readiness);
+  const durationLabel = estimatedMinutes > 30 ? `~${estimatedMinutes} min` : '~30 min';
+
   if (state.readiness === 'recovery') {
     app().innerHTML = `
       <div style="padding-top:40px">
@@ -473,7 +496,7 @@ function renderHome() {
         <div class="flex gap-2 mt-3 flex-wrap">
           <span class="badge ${colorMap[r.color] || 'badge-gray'}">${r.emoji} ${r.label}</span>
           <span class="badge badge-gray">${s.exercises.length} øvelser</span>
-          <span class="badge badge-gray">~30 min</span>
+          <span class="badge badge-gray">${durationLabel}</span>
         </div>
         ${state.readiness !== 'normal' && state.readiness !== 'full' ? `<p class="text-sm mt-2" style="color:var(--orange)">${r.adj}</p>` : ''}
       </div>
@@ -527,11 +550,15 @@ function renderHome() {
 
 function renderWarmup() {
   const s = getSession();
+  const elapsedTime = formatTime(getWorkoutElapsedSeconds());
   app().innerHTML = `
     <div>
       <div class="flex justify-between items-center mb-4">
         <button class="btn-sm btn-outline" onclick="goHome()" style="width:auto;padding:8px 16px;border-radius:10px;border:2px solid #e5e7eb;background:transparent;font-weight:600;cursor:pointer">← Tilbage</button>
-        <span class="badge badge-orange">Opvarmning</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="badge badge-orange">Opvarmning</span>
+          <span class="badge badge-gray" style="font-variant-numeric:tabular-nums">⏱ ${elapsedTime}</span>
+        </div>
       </div>
       <div class="card" style="border-left:4px solid var(--orange)">
         <h2>Opvarmning (${s.warmup.duration})</h2>
@@ -566,6 +593,7 @@ function renderExercise() {
   const totalEx = s.exercises.length;
   const completedEx = Object.values(state.log).filter(l => l.completed).length;
   const progress = Math.round((completedEx / totalEx) * 100);
+  const elapsedTime = formatTime(getWorkoutElapsedSeconds());
 
   // Is current set logged?
   const currentSetLogged = exLog.sets[state.setIndex] != null;
@@ -574,7 +602,7 @@ function renderExercise() {
     <div>
       <div class="flex justify-between items-center mb-2">
         <span class="text-sm text-gray">Øvelse ${state.exIndex+1} af ${totalEx}</span>
-        <span class="text-sm text-gray">${completedEx}/${totalEx} udført</span>
+        <span class="badge badge-gray" style="font-variant-numeric:tabular-nums">⏱ ${elapsedTime}</span>
       </div>
       <div class="progress-bar"><div class="progress-fill" style="width:${progress}%;background:var(--green)"></div></div>
 
@@ -690,11 +718,12 @@ function renderRest() {
 
 function renderCooldown() {
   const s = getSession();
+  const elapsedTime = formatTime(getWorkoutElapsedSeconds());
   app().innerHTML = `
     <div>
       <div class="flex justify-between items-center mb-4">
         <span class="badge badge-blue">Nedkøling</span>
-        <span class="text-sm text-gray">${s.cooldown.duration}</span>
+        <span class="badge badge-gray" style="font-variant-numeric:tabular-nums">⏱ ${elapsedTime}</span>
       </div>
       <div class="card" style="border-left:4px solid var(--blue)">
         <h2>Nedkøling</h2>
@@ -722,9 +751,13 @@ function renderCooldown() {
 
 function renderDone() {
   const s = getSession();
+  const totalSeconds = getWorkoutElapsedSeconds();
   const dur = state.startTime ? Math.round((Date.now() - state.startTime) / 60000) : '?';
   const r = getReadiness();
 
+  // Calculate stats
+  let totalSets = 0;
+  let totalRPEs = [];
   let exerciseSummary = s.exercises.map((ex, i) => {
     const exLog = state.log[i];
     if (!exLog || exLog.sets.length === 0) return `
@@ -732,7 +765,11 @@ function renderDone() {
         <span>${ex.name}</span>
         <span class="text-sm text-gray">Sprunget over</span>
       </div>`;
-    const setStr = exLog.sets.map(s => s ? `${s.reps || '✓'}${s.rpe ? ` @${s.rpe}` : ''}` : '—').join(', ');
+    const setStr = exLog.sets.map(s => {
+      if (s && s.rpe) totalRPEs.push(s.rpe);
+      return s ? `${s.reps || '✓'}${s.rpe ? ` @${s.rpe}` : ''}` : '—';
+    }).join(', ');
+    totalSets += exLog.sets.filter(x => x).length;
     return `
       <div class="summary-exercise">
         <div>
@@ -743,16 +780,36 @@ function renderDone() {
       </div>`;
   }).join('');
 
+  const avgRPE = totalRPEs.length > 0 ? (totalRPEs.reduce((a, b) => a + b, 0) / totalRPEs.length).toFixed(1) : null;
+  const durationFormatted = formatTime(totalSeconds);
+
   app().innerHTML = `
     <div class="text-center" style="padding-top:32px">
-      <div style="font-size:3.5rem">💪</div>
+      <div style="font-size:3.5rem;animation:pulse 0.6s ease-out">💪</div>
       <h1 class="mt-2">Stærkt arbejde!</h1>
-      <p class="text-gray mt-1">${s.name} gennemført på ${dur} min</p>
+      <p class="text-gray mt-1">${s.name}</p>
       <span class="badge badge-${r.color === 'blue' ? 'blue' : r.color === 'green' ? 'green' : r.color === 'orange' ? 'orange' : 'red'} mt-2">${r.emoji} ${r.label}</span>
     </div>
 
     <div class="card mt-4">
-      <h3 class="mb-2">Oversigt</h3>
+      <h3 class="mb-3">Træningsstatistik</h3>
+      <div class="flex justify-between items-center" style="padding:8px 0;border-bottom:1px solid #f3f4f6">
+        <span>Varighed</span>
+        <span style="font-weight:600;font-variant-numeric:tabular-nums">${durationFormatted}</span>
+      </div>
+      <div class="flex justify-between items-center" style="padding:8px 0;border-bottom:1px solid #f3f4f6">
+        <span>Sæt gennemført</span>
+        <span style="font-weight:600">${totalSets}</span>
+      </div>
+      ${avgRPE ? `
+      <div class="flex justify-between items-center" style="padding:8px 0">
+        <span>Gennemsnitligt RPE</span>
+        <span style="font-weight:600">${avgRPE}</span>
+      </div>` : ''}
+    </div>
+
+    <div class="card">
+      <h3 class="mb-2">Øvelser</h3>
       ${exerciseSummary}
     </div>
 
@@ -762,6 +819,8 @@ function renderDone() {
       ← Tilbage til start
     </button>`;
 
+  // Play celebration sound and trigger animation
+  setTimeout(() => playOdeToJoy(), 300);
   saveWorkout();
 }
 
@@ -786,7 +845,7 @@ function renderMobility() {
 // ─── ACTIONS ────────────────────────────────────────────────────────
 function changeSession(key) { state.sessionKey = key; state.log = {}; render(); }
 function changeReadiness(val) { state.readiness = val; state.log = {}; render(); }
-function goHome() { clearTimer(); releaseWakeLock(); state.screen = 'home'; state.exIndex = 0; state.setIndex = 0; state.showTips = false; render(); }
+function goHome() { clearTimer(); stopWorkoutTimer(); releaseWakeLock(); state.screen = 'home'; state.exIndex = 0; state.setIndex = 0; state.showTips = false; render(); }
 function startMobility() { state.screen = 'mobility'; render(); }
 
 function startWorkout() {
@@ -796,8 +855,35 @@ function startWorkout() {
   state.cooldownChecked = [];
   state.warmupDemoIndex = -1;
   state.cooldownDemoIndex = -1;
+  state.totalSetsCompleted = 0;
   state.screen = 'warmup';
+  startWorkoutTimer();
   render();
+}
+
+function startWorkoutTimer() {
+  if (state.workoutTimerInterval) clearInterval(state.workoutTimerInterval);
+  state.workoutTimerInterval = setInterval(() => {
+    render();
+  }, 1000);
+}
+
+function stopWorkoutTimer() {
+  if (state.workoutTimerInterval) clearInterval(state.workoutTimerInterval);
+}
+
+function getWorkoutElapsedSeconds() {
+  return state.startTime ? Math.floor((Date.now() - state.startTime) / 1000) : 0;
+}
+
+function formatTime(totalSeconds) {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
 function toggleWarmup(i) {
@@ -890,10 +976,17 @@ function advanceSet() {
 
   if (state.setIndex < numSets - 1) {
     state.setIndex++;
+    state.totalSetsCompleted++;
     startRestTimer(75); // default 75 sec rest
   } else {
+    state.totalSetsCompleted++;
     exLog.completed = true;
+    // Show brief celebration before advancing
     render();
+    setTimeout(() => {
+      state.screen = 'exercise';
+      render();
+    }, 800);
   }
 }
 
@@ -984,6 +1077,51 @@ function playBeep() {
       gain.gain.value = 0.3;
       osc.start(ctx.currentTime + delay);
       osc.stop(ctx.currentTime + delay + 0.1);
+    });
+  } catch(e) {}
+}
+
+function playOdeToJoy() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Ode to Joy melody (starting from "Freude, schöner Götterfunken" theme)
+    // D D E F F E D C B B C D D C C (quarter notes)
+    const notes = [
+      {freq: 293.66, duration: 0.5},  // D
+      {freq: 293.66, duration: 0.5},  // D
+      {freq: 329.63, duration: 0.5},  // E
+      {freq: 349.23, duration: 0.5},  // F
+      {freq: 349.23, duration: 0.5},  // F
+      {freq: 329.63, duration: 0.5},  // E
+      {freq: 293.66, duration: 0.5},  // D
+      {freq: 261.63, duration: 0.5},  // C
+      {freq: 246.94, duration: 0.5},  // B
+      {freq: 246.94, duration: 0.5},  // B
+      {freq: 261.63, duration: 0.5},  // C
+      {freq: 293.66, duration: 0.5},  // D
+      {freq: 293.66, duration: 0.5},  // D (hold longer)
+      {freq: 261.63, duration: 0.75},  // C
+      {freq: 261.63, duration: 0.75}   // C (finish)
+    ];
+
+    let time = ctx.currentTime;
+    const tempo = 0.4; // ~120 BPM
+
+    notes.forEach(note => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = note.freq;
+
+      const dur = note.duration * tempo;
+      gain.gain.setValueAtTime(0.25, time);
+      gain.gain.exponentialRampToValueAtTime(0.01, time + dur * 0.9);
+      gain.gain.setValueAtTime(0, time + dur);
+
+      osc.start(time);
+      osc.stop(time + dur);
+
+      time += dur;
     });
   } catch(e) {}
 }

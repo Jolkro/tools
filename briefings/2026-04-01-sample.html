@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Bisjop Briefing — 1. april 2026</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--blue:#3b82f6;--green:#22c55e;--orange:#f97316;--red:#ef4444;--purple:#8b5cf6;--gray:#6b7280;--dark:#111827;--light:#f9fafb;--card-bg:#fff;--body-bg:#f3f4f6;--border:#e5e7eb;--text:#111827;--text-secondary:#6b7280}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--body-bg);color:var(--text);min-height:100vh;-webkit-tap-highlight-color:transparent;line-height:1.6}
+.app{max-width:640px;margin:0 auto;padding:16px;padding-bottom:80px}
+.briefing-header{padding:24px 0 16px;border-bottom:2px solid var(--border);margin-bottom:20px}
+.briefing-type{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--blue)}
+.briefing-title{font-size:1.6rem;font-weight:800;line-height:1.2;margin-top:4px}
+.briefing-date{font-size:.9rem;color:var(--text-secondary);margin-top:4px}
+.section-nav{position:sticky;top:0;z-index:50;background:var(--body-bg);padding:8px 0;margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;display:flex;gap:6px;scrollbar-width:none}
+.section-nav::-webkit-scrollbar{display:none}
+.nav-pill{display:inline-flex;align-items:center;gap:4px;padding:6px 14px;border-radius:99px;font-size:.8rem;font-weight:600;background:var(--card-bg);border:1.5px solid var(--border);color:var(--text-secondary);text-decoration:none;white-space:nowrap;transition:all .15s;cursor:pointer;flex-shrink:0}
+.nav-pill:active{transform:scale(.95)}
+.nav-pill.active,.nav-pill:hover{border-color:var(--blue);color:var(--blue);background:#dbeafe}
+.card{background:var(--card-bg);border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.card-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.card-icon{font-size:1.4rem}
+.card-title{font-size:1.05rem;font-weight:700}
+.card-subtitle{font-size:.8rem;color:var(--text-secondary);margin-top:2px}
+.prose{font-size:.95rem;line-height:1.7}
+.prose p{margin-bottom:12px}
+.prose p:last-child{margin-bottom:0}
+.metric-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.metric-row:last-child{border-bottom:none}
+.metric-label{font-size:.9rem;color:var(--text-secondary)}
+.metric-value{font-size:1rem;font-weight:700}
+.metric-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:99px;font-size:.8rem;font-weight:600}
+.status-green{background:#dcfce7;color:#166534}
+.status-yellow{background:#fef3c7;color:#92400e}
+.status-red{background:#fee2e2;color:#991b1b}
+.status-blue{background:#dbeafe;color:#1d4ed8}
+.cal-event{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.cal-event:last-child{border-bottom:none}
+.cal-time{min-width:60px;font-size:.85rem;font-weight:700;color:var(--blue);white-space:nowrap}
+.cal-info{flex:1}
+.cal-title{font-size:.9rem;font-weight:600}
+.cal-detail{font-size:.8rem;color:var(--text-secondary);margin-top:2px}
+.task-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.task-item:last-child{border-bottom:none}
+.task-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:7px}
+.task-dot.overdue{background:var(--red)}
+.task-dot.today{background:var(--orange)}
+.task-dot.upcoming{background:var(--blue)}
+.task-name{font-size:.9rem;font-weight:600}
+.task-due{font-size:.8rem;color:var(--text-secondary)}
+.training-link{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border-radius:14px;background:var(--dark);color:#fff;font-weight:700;font-size:1rem;text-decoration:none;margin-top:12px;transition:transform .1s}
+.training-link:active{transform:scale(.97)}
+.alert{padding:12px 16px;border-radius:12px;font-size:.9rem;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px}
+.alert-icon{flex-shrink:0;font-size:1.1rem}
+.alert-info{background:#dbeafe;color:#1d4ed8}
+.alert-success{background:#dcfce7;color:#166534}
+.briefing-footer{text-align:center;padding:24px 0;font-size:.8rem;color:var(--text-secondary)}
+.briefing-footer a{color:var(--blue);text-decoration:none;font-weight:600}
+@media(prefers-color-scheme:dark){
+  :root{--card-bg:#1f2937;--body-bg:#111827;--border:#374151;--text:#f9fafb;--text-secondary:#9ca3af}
+  .nav-pill{background:#1f2937;border-color:#374151;color:#9ca3af}
+  .nav-pill.active,.nav-pill:hover{border-color:var(--blue);color:#60a5fa;background:#1e3a5f}
+  .metric-row{border-bottom-color:#374151}
+  .cal-event{border-bottom-color:#374151}
+  .task-item{border-bottom-color:#374151}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="briefing-header">
+    <div class="briefing-type">MORGEN BRIEFING</div>
+    <div class="briefing-title">God morgen, Ole</div>
+    <div class="briefing-date">Onsdag 1. april 2026</div>
+  </div>
+
+  <nav class="section-nav" id="section-nav"></nav>
+
+  <div id="sections">
+
+    <!-- HEALTH -->
+    <div class="card" id="health" data-section="health">
+      <div class="card-header">
+        <div class="card-icon">💚</div>
+        <div>
+          <div class="card-title">Sundhed</div>
+          <div class="card-subtitle">Normal dag</div>
+        </div>
+      </div>
+      <div class="prose">
+        <div class="metric-row">
+          <span class="metric-label">Sovn</span>
+          <span class="metric-value"><span class="metric-badge status-green">7t 12m</span></span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">HRV</span>
+          <span class="metric-value"><span class="metric-badge status-green">45 ms</span></span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Hvilepuls</span>
+          <span class="metric-value"><span class="metric-badge status-green">56 bpm</span></span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Skridt i gar</span>
+          <span class="metric-value">7.200</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Aktiv energi</span>
+          <span class="metric-value">481 kcal</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Readiness</span>
+          <span class="metric-value"><span class="metric-badge status-green">Normal dag</span></span>
+        </div>
+        <p style="margin-top:12px">Fin sovn og god HRV. Ingen alkohol i gar. Klar til normal traening.</p>
+      </div>
+    </div>
+
+    <!-- TRAINING -->
+    <div class="card" id="training" data-section="training">
+      <div class="card-header">
+        <div class="card-icon">🏋️</div>
+        <div>
+          <div class="card-title">Traening</div>
+          <div class="card-subtitle">Session B: Pull + Hinge (onsdag)</div>
+        </div>
+      </div>
+      <div class="prose">
+        <p>Normal belastning. 6 ovelser, ca. 30 minutter.</p>
+        <p>Chin-ups, Dumbbell Rows, Romanian Deadlifts, Kettlebell Swings, Face Pulls, Pallof Press.</p>
+        <a href="https://jolkro.github.io/tools/training-app.html?session=B&readiness=normal" class="training-link">Start traening &rarr;</a>
+      </div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="card" id="calendar" data-section="calendar">
+      <div class="card-header">
+        <div class="card-icon">📅</div>
+        <div>
+          <div class="card-title">Kalender</div>
+          <div class="card-subtitle">3 begivenheder i dag</div>
+        </div>
+      </div>
+      <div class="prose">
+        <div class="cal-event">
+          <div class="cal-time">09:00</div>
+          <div class="cal-info">
+            <div class="cal-title">Standup (Easygoing)</div>
+            <div class="cal-detail">Google Meet &middot; 15 min</div>
+          </div>
+        </div>
+        <div class="cal-event">
+          <div class="cal-time">11:00</div>
+          <div class="cal-info">
+            <div class="cal-title">Strategimode med Magnus</div>
+            <div class="cal-detail">Kontoret &middot; 1 time &middot; Kroijer Digital</div>
+          </div>
+        </div>
+        <div class="cal-event">
+          <div class="cal-time">15:30</div>
+          <div class="cal-info">
+            <div class="cal-title">Hent born i institution</div>
+            <div class="cal-detail">Personlig</div>
+          </div>
+        </div>
+        <p style="margin-top:12px">I morgen: 1 mode (Easygoing board meeting kl. 10:00).</p>
+      </div>
+    </div>
+
+    <!-- EMAIL -->
+    <div class="card" id="email" data-section="email">
+      <div class="card-header">
+        <div class="card-icon">📧</div>
+        <div>
+          <div class="card-title">Email</div>
+          <div class="card-subtitle">5 nye, 2 kraever svar</div>
+        </div>
+      </div>
+      <div class="prose">
+        <div class="alert alert-info">
+          <span class="alert-icon">📬</span>
+          <span><strong>Easygoing:</strong> 2 emails (1 fra leverandor om leveringsdato, 1 nyhedsbrev). Udkast til svar pa leverandor-email posted i #easygoing-agent.</span>
+        </div>
+        <div class="alert alert-info">
+          <span class="alert-icon">📬</span>
+          <span><strong>Kroijer Digital:</strong> 1 email fra Magnus om morgenmodet. Ingen svar nodvendigt.</span>
+        </div>
+        <div class="alert alert-info">
+          <span class="alert-icon">📬</span>
+          <span><strong>Personlig:</strong> 2 emails (1 pakkelevering, 1 tandlaege-paamindelse). Ingen svar nodvendigt.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TASKS -->
+    <div class="card" id="tasks" data-section="tasks">
+      <div class="card-header">
+        <div class="card-icon">✅</div>
+        <div>
+          <div class="card-title">Opgaver</div>
+          <div class="card-subtitle">1 forfalden, 2 i dag</div>
+        </div>
+      </div>
+      <div class="prose">
+        <div class="task-item">
+          <div class="task-dot overdue"></div>
+          <div>
+            <div class="task-name">Review kontrakt fra advokat</div>
+            <div class="task-due">Forfalden i gar &middot; Kroijer Digital</div>
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-dot today"></div>
+          <div>
+            <div class="task-name">Opdater produktbeskrivelser</div>
+            <div class="task-due">I dag &middot; Easygoing</div>
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-dot today"></div>
+          <div>
+            <div class="task-name">Betal parkering</div>
+            <div class="task-due">I dag &middot; Personlig</div>
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-dot upcoming"></div>
+          <div>
+            <div class="task-name">Forbered pitch deck</div>
+            <div class="task-due">Fredag &middot; Kroijer Digital</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DECISIONS -->
+    <div class="card" id="decisions" data-section="decisions">
+      <div class="card-header">
+        <div class="card-icon">⚡</div>
+        <div>
+          <div class="card-title">Beslutninger</div>
+          <div class="card-subtitle">2 venter pa dig</div>
+        </div>
+      </div>
+      <div class="prose">
+        <div class="alert alert-success">
+          <span class="alert-icon">✏️</span>
+          <span>1 email-udkast i #easygoing-agent venter pa godkendelse (leverandor-svar).</span>
+        </div>
+        <div class="alert alert-info">
+          <span class="alert-icon">💊</span>
+          <span>Sundhed/medicin-reminder: Du bad mig minde dig om at tage stilling til dette inden 7. april. Har du haft tid til at taenke over det?</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="briefing-footer">
+    Bisjop &middot; <span id="generated-at"></span><br>
+    <a href="https://jolkro.github.io/tools/checkin-app.html?type=morning">Morgen check-in</a> &middot;
+    <a href="https://jolkro.github.io/tools/training-app.html?session=B&readiness=normal">Traening</a>
+  </div>
+
+</div>
+
+<script>
+const PIPEDREAM_TRACKING = 'https://eo1z8olrm9ptxdd.m.pipedream.net';
+function trackView(section) {
+  try {
+    navigator.sendBeacon(PIPEDREAM_TRACKING, JSON.stringify({
+      source: 'briefing_engagement', date: '2026-04-01',
+      section: section, briefing_type: 'morning', timestamp: new Date().toISOString()
+    }));
+  } catch(e) {}
+}
+function buildNav() {
+  const nav = document.getElementById('section-nav');
+  const sections = document.querySelectorAll('[data-section]');
+  const icons = { health:'💚', calendar:'📅', email:'📧', tasks:'✅', training:'🏋️', decisions:'⚡' };
+  const labels = { health:'Sundhed', calendar:'Kalender', email:'Email', tasks:'Opgaver', training:'Traening', decisions:'Beslutninger' };
+  sections.forEach(sec => {
+    const id = sec.getAttribute('data-section');
+    const pill = document.createElement('a');
+    pill.className = 'nav-pill';
+    pill.href = '#' + id;
+    pill.textContent = (icons[id]||'') + ' ' + (labels[id]||id);
+    pill.addEventListener('click', function(e) {
+      e.preventDefault();
+      sec.scrollIntoView({ behavior:'smooth', block:'start' });
+      trackView(id);
+      document.querySelectorAll('.nav-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+    });
+    nav.appendChild(pill);
+  });
+}
+function setupScrollSpy() {
+  const sections = document.querySelectorAll('[data-section]');
+  const pills = document.querySelectorAll('.nav-pill');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.getAttribute('data-section');
+        pills.forEach(p => p.classList.toggle('active', p.getAttribute('href') === '#' + id));
+      }
+    });
+  }, { rootMargin: '-80px 0px -60% 0px', threshold: 0 });
+  sections.forEach(sec => observer.observe(sec));
+}
+document.addEventListener('DOMContentLoaded', () => {
+  buildNav(); setupScrollSpy(); trackView('page_load');
+  const el = document.getElementById('generated-at');
+  if (el) el.textContent = 'Genereret 1. apr kl. 08:00';
+});
+</script>
+</body>
+</html>
