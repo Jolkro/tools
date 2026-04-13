@@ -42,9 +42,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 .tc.on .time{color:var(--text)}
 .tc .meta{font-size:.8rem;color:var(--text-dim);margin-top:4px}
 .tc .notif{font-size:.7rem;color:var(--text-muted);margin-top:6px}
-.tc.eg{--c:var(--eg);--g:var(--eg-glow)}
-.tc.kd{--c:var(--kd);--g:var(--kd-glow)}
-.tc.ok{--c:var(--ok);--g:var(--ok-glow)}
+.tc.eg{--c:var(--eg);--g:var(--eg-glow)}.tc.kd{--c:var(--kd);--g:var(--kd-glow)}.tc.ok{--c:var(--ok);--g:var(--ok-glow)}
 .wk{padding:16px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin:16px 0}
 .wk h2{font-size:.85rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
 .br{display:flex;align-items:center;gap:10px;margin-bottom:8px}.br:last-child{margin-bottom:0}
@@ -70,16 +68,16 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 .lo .c p{color:var(--text-dim);font-size:.9rem;line-height:1.5}
 .lo .c button{margin-top:24px;padding:12px 32px;border-radius:12px;border:none;background:var(--xp);color:#fff;font-weight:700;font-size:1rem;cursor:pointer;font-family:'Outfit',sans-serif}
 .rst{text-align:center;margin:24px 0;font-size:.75rem;color:var(--text-muted)}.rst span{cursor:pointer;text-decoration:underline;margin:0 8px}
-/* Setup screen */
+.sync-status{text-align:center;font-size:.7rem;color:var(--text-muted);margin-top:-12px;margin-bottom:8px}
+.sync-status.err{color:var(--eg)}
 .setup{max-width:420px;margin:40px auto;padding:24px}
 .setup h1{font-family:'JetBrains Mono',monospace;font-size:1.2rem;text-align:center;margin-bottom:8px}
-.setup p{text-align:center;color:var(--text-dim);font-size:.85rem;margin-bottom:24px}
+.setup p{text-align:center;color:var(--text-dim);font-size:.85rem;margin-bottom:24px;line-height:1.5}
 .setup label{display:block;font-size:.85rem;font-weight:600;margin:16px 0 6px;color:var(--text-dim)}
 .setup input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.85rem;font-family:'JetBrains Mono',monospace}
 .setup input:focus{outline:none;border-color:var(--xp)}
 .setup button{width:100%;padding:14px;border-radius:12px;border:none;background:var(--xp);color:#fff;font-weight:700;font-size:1rem;cursor:pointer;margin-top:24px;font-family:'Outfit',sans-serif}
-.setup button:active{transform:scale(.98)}
-.setup .note{margin-top:16px;font-size:.75rem;color:var(--text-muted);text-align:center}
+.setup .note{margin-top:16px;font-size:.75rem;color:var(--text-muted);text-align:center;line-height:1.5}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}.tc.on .dot{animation:pulse 2s ease infinite}
 @keyframes pop{0%{transform:scale(.5);opacity:0}50%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
 </style>
@@ -87,250 +85,292 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 <body>
 <div class="app" id="app"></div>
 <script>
-// ─── CONFIG (from localStorage, NEVER hardcoded) ───────────────
+// ─── CONFIG (localStorage only, never hardcoded) ────────────────
 const CFG_KEY = 'bishop_timer_cfg';
-const SK = 'bishop_timer_v2';
+const SK = 'bishop_timer_v3';
+const AGENT_HUB_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzWvVybSzM61ffOvNK_vUwA5iB_qg8KZg7Y2hOHqhLTG0DPzowdDSswqC5h_6ZK8Wk/exec';
 
 const ID = {
-  eg: { name: 'Easygoing', short: 'EG' },
-  kd: { name: 'Kroijer Digital', short: 'KD' },
-  ok: { name: 'Personal', short: 'OK' }
+  eg:{name:'Easygoing',short:'EG'},
+  kd:{name:'Kroijer Digital',short:'KD'},
+  ok:{name:'Personal',short:'OK'}
 };
 const LV = [
-  { l:1, x:0, t:'Rookie', e:'🌱' }, { l:2, x:200, t:'Apprentice', e:'⚡' },
-  { l:3, x:500, t:'Professional', e:'💼' }, { l:4, x:1000, t:'Expert', e:'🎯' },
-  { l:5, x:2000, t:'Master', e:'🏆' }, { l:6, x:3500, t:'Grandmaster', e:'👑' },
-  { l:7, x:6000, t:'Legend', e:'🌟' }
+  {l:1,x:0,t:'Rookie',e:'🌱'},{l:2,x:200,t:'Apprentice',e:'⚡'},
+  {l:3,x:500,t:'Professional',e:'💼'},{l:4,x:1000,t:'Expert',e:'🎯'},
+  {l:5,x:2000,t:'Master',e:'🏆'},{l:6,x:3500,t:'Grandmaster',e:'👑'},
+  {l:7,x:6000,t:'Legend',e:'🌟'}
 ];
-const DG = 180, WG = 900;
+const DG=180, WG=900;
 
 // ─── WEBHOOK CONFIG ─────────────────────────────────────────────
-function getWebhooks() {
-  try { return JSON.parse(localStorage.getItem(CFG_KEY)) || null; } catch(e) { return null; }
+function getCfg(){try{return JSON.parse(localStorage.getItem(CFG_KEY))||null}catch(e){return null}}
+function saveCfg(c){localStorage.setItem(CFG_KEY,JSON.stringify(c))}
+
+function renderSetup(){
+  const c=getCfg();
+  document.getElementById('app').innerHTML=`
+  <div class="setup">
+    <h1>⏱ Bishop Timer Setup</h1>
+    <p>Indtast dine Slack webhook-URL'er.<br>De gemmes kun lokalt i din browser.</p>
+    <label>🟡 Easygoing (#easygoing-agent)</label>
+    <input id="wh_eg" placeholder="https://hooks.slack.com/services/..." value="${c?.eg||''}">
+    <label>🔵 Kroijer Digital (#digital-agent)</label>
+    <input id="wh_kd" placeholder="https://hooks.slack.com/services/..." value="${c?.kd||''}">
+    <label>🟢 Personal (#personal-agent)</label>
+    <input id="wh_ok" placeholder="https://hooks.slack.com/services/..." value="${c?.ok||''}">
+    <button onclick="doSetup()">Gem & Start →</button>
+    <div class="note">🔒 Gemmes kun i localStorage. Aldrig i koden eller på en server.</div>
+  </div>`;
 }
 
-function saveWebhooks(cfg) {
-  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
-}
-
-function renderSetup() {
-  const cfg = getWebhooks();
-  document.getElementById('app').innerHTML = `
-    <div class="setup">
-      <h1>⏱ Bishop Timer Setup</h1>
-      <p>Indtast dine Slack webhook-URL'er. De gemmes kun lokalt i din browser — aldrig i koden.</p>
-      <label>🟡 Easygoing (#easygoing-agent)</label>
-      <input id="wh_eg" placeholder="https://hooks.slack.com/services/..." value="${cfg?.eg || ''}">
-      <label>🔵 Kroijer Digital (#digital-agent)</label>
-      <input id="wh_kd" placeholder="https://hooks.slack.com/services/..." value="${cfg?.kd || ''}">
-      <label>🟢 Personal (#personal-agent)</label>
-      <input id="wh_ok" placeholder="https://hooks.slack.com/services/..." value="${cfg?.ok || ''}">
-      <label>📝 Content (#content)</label>
-      <input id="wh_content" placeholder="https://hooks.slack.com/services/..." value="${cfg?.content || ''}">
-      <button onclick="saveSetup()">Gem & Start →</button>
-      <div class="note">🔒 Webhook-URL'er gemmes kun i din browsers localStorage.<br>De sendes aldrig til en server og er ikke synlige i kildekoden.</div>
-    </div>`;
-}
-
-function saveSetup() {
-  const cfg = {
-    eg: document.getElementById('wh_eg').value.trim(),
-    kd: document.getElementById('wh_kd').value.trim(),
-    ok: document.getElementById('wh_ok').value.trim(),
-    content: document.getElementById('wh_content').value.trim()
+function doSetup(){
+  const c={
+    eg:document.getElementById('wh_eg').value.trim(),
+    kd:document.getElementById('wh_kd').value.trim(),
+    ok:document.getElementById('wh_ok').value.trim()
   };
-  if (!cfg.eg || !cfg.kd || !cfg.ok) {
-    alert('EG, KD og OK webhooks er påkrævet.');
-    return;
-  }
-  saveWebhooks(cfg);
-  init();
+  if(!c.eg||!c.kd||!c.ok){alert('Alle 3 webhooks er påkrævet.');return}
+  saveCfg(c);init();
 }
 
 // ─── STATE ──────────────────────────────────────────────────────
-let ntid = null, ncnt = 0;
+let ntid=null,ncnt=0,syncMsg='';
 
-function defaultState() {
-  return { at:null, as:null, ss:[], xp:{t:0,d:0,ld:null}, st:{c:0,ld:null}, slu:false, nl:null };
+function defS(){return{at:null,as:null,ss:[],xp:{t:0,d:0,ld:null},st:{c:0,ld:null},slu:false,nl:null}}
+let S=loadS();
+
+function loadS(){
+  try{
+    const s=JSON.parse(localStorage.getItem(SK));
+    if(s){const d=new Date().toISOString().slice(0,10);if(s.xp.ld!==d){s.xp.d=0;s.xp.ld=d}return s}
+  }catch(e){}
+  return defS();
 }
-
-let S = loadState();
-
-function loadState() {
-  try {
-    const s = JSON.parse(localStorage.getItem(SK));
-    if (s) {
-      const d = new Date().toISOString().slice(0,10);
-      if (s.xp.ld !== d) { s.xp.d = 0; s.xp.ld = d; }
-      return s;
-    }
-  } catch(e) {}
-  return defaultState();
-}
-
-function ss() { localStorage.setItem(SK, JSON.stringify(S)); }
+function save(){localStorage.setItem(SK,JSON.stringify(S))}
 
 // ─── HELPERS ────────────────────────────────────────────────────
-function gl(x) { let c = LV[0]; for (const l of LV) if (x >= l.x) c = l; else break; return c; }
-function nl(x) { for (const l of LV) if (x < l.x) return l; return null; }
-function td() { const d = new Date().toISOString().slice(0,10); return S.ss.filter(s => s.s.slice(0,10) === d); }
-function tm(i) { return td().filter(s => s.i === i).reduce((a,s) => a + (s.d||0), 0); }
-function tt() {
-  const a = S.at ? Math.floor((Date.now() - new Date(S.as).getTime()) / 60000) : 0;
-  return td().reduce((s,x) => s + (x.d||0), 0) + a;
+function gl(x){let c=LV[0];for(const l of LV)if(x>=l.x)c=l;else break;return c}
+function nxl(x){for(const l of LV)if(x<l.x)return l;return null}
+function td(){const d=new Date().toISOString().slice(0,10);return S.ss.filter(s=>s.s.slice(0,10)===d)}
+function tmin(i){return td().filter(s=>s.i===i).reduce((a,s)=>a+(s.d||0),0)}
+function ttot(){
+  const a=S.at?Math.floor((Date.now()-new Date(S.as).getTime())/60000):0;
+  return td().reduce((s,x)=>s+(x.d||0),0)+a;
 }
-function ws() {
-  const n = new Date(), m = new Date(n);
-  m.setDate(n.getDate() - ((n.getDay()+6)%7)); m.setHours(0,0,0,0);
-  return S.ss.filter(s => s.s.slice(0,10) >= m.toISOString().slice(0,10));
+function ws(){
+  const n=new Date(),m=new Date(n);m.setDate(n.getDate()-((n.getDay()+6)%7));m.setHours(0,0,0,0);
+  return S.ss.filter(s=>s.s.slice(0,10)>=m.toISOString().slice(0,10));
 }
-function wm(i) { return ws().filter(s => s.i === i).reduce((a,s) => a + (s.d||0), 0); }
-function wt() { return ws().reduce((a,s) => a + (s.d||0), 0); }
-function ng() {
-  const t = new Set(td().map(s => s.i));
-  if (S.at) t.add(S.at);
-  return ['eg','kd','ok'].filter(i => !t.has(i));
+function wmin(i){return ws().filter(s=>s.i===i).reduce((a,s)=>a+(s.d||0),0)}
+function wtot(){return ws().reduce((a,s)=>a+(s.d||0),0)}
+function neg(){
+  const t=new Set(td().map(s=>s.i));if(S.at)t.add(S.at);
+  return['eg','kd','ok'].filter(i=>!t.has(i));
 }
-function fm(m) {
-  if (m < 60) return Math.round(m) + 'm';
-  const h = Math.floor(m/60), r = Math.round(m%60);
-  return r > 0 ? h + 't ' + r + 'm' : h + 't';
-}
-function ge(iso) {
-  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  return String(Math.floor(s/3600)).padStart(2,'0') + ':' + String(Math.floor((s%3600)/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+function fm(m){if(m<60)return Math.round(m)+'m';const h=Math.floor(m/60),r=Math.round(m%60);return r>0?h+'t '+r+'m':h+'t'}
+function ge(iso){
+  const s=Math.floor((Date.now()-new Date(iso).getTime())/1000);
+  return String(Math.floor(s/3600)).padStart(2,'0')+':'+String(Math.floor((s%3600)/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
 }
 
 // ─── XP ─────────────────────────────────────────────────────────
-function ax(a) {
-  const o = gl(S.xp.t); S.xp.t += a; S.xp.d += a;
-  S.xp.ld = new Date().toISOString().slice(0,10);
-  const n = gl(S.xp.t);
-  if (n.l > o.l) { S.slu = true; S.nl = n; }
-  ss();
+function addXP(a){
+  const o=gl(S.xp.t);S.xp.t+=a;S.xp.d+=a;
+  S.xp.ld=new Date().toISOString().slice(0,10);
+  const n=gl(S.xp.t);if(n.l>o.l){S.slu=true;S.nl=n}save();
 }
-function cb() {
-  const d = new Date().toISOString().slice(0,10), k = 'b_' + d;
-  const aw = JSON.parse(localStorage.getItem(k) || '{}');
-  const t = tt();
-  if (t >= DG && !aw.dg) { ax(50); aw.dg = true; us(); }
-  const em = tm('eg') + (S.at==='eg' ? Math.floor((Date.now()-new Date(S.as).getTime())/60000) : 0);
-  const km = tm('kd') + (S.at==='kd' ? Math.floor((Date.now()-new Date(S.as).getTime())/60000) : 0);
-  const om = tm('ok') + (S.at==='ok' ? Math.floor((Date.now()-new Date(S.as).getTime())/60000) : 0);
-  if (em >= 30 && km >= 30 && om >= 30 && !aw.at) { ax(25); aw.at = true; }
-  localStorage.setItem(k, JSON.stringify(aw));
+function chkBonus(){
+  const d=new Date().toISOString().slice(0,10),k='b3_'+d;
+  const aw=JSON.parse(localStorage.getItem(k)||'{}');
+  if(ttot()>=DG&&!aw.dg){addXP(50);aw.dg=true;updStreak()}
+  const em=tmin('eg')+(S.at==='eg'?Math.floor((Date.now()-new Date(S.as).getTime())/60000):0);
+  const km=tmin('kd')+(S.at==='kd'?Math.floor((Date.now()-new Date(S.as).getTime())/60000):0);
+  const om=tmin('ok')+(S.at==='ok'?Math.floor((Date.now()-new Date(S.as).getTime())/60000):0);
+  if(em>=30&&km>=30&&om>=30&&!aw.at){addXP(25);aw.at=true}
+  localStorage.setItem(k,JSON.stringify(aw));
 }
-function us() {
-  const d = new Date().toISOString().slice(0,10);
-  if (S.st.ld === d) return;
-  const y = new Date(); y.setDate(y.getDate()-1);
-  while (y.getDay()===0 || y.getDay()===6) y.setDate(y.getDate()-1);
-  const ys = y.toISOString().slice(0,10);
-  if (S.st.ld === ys || S.st.c === 0) {
-    S.st.c++; S.st.ld = d;
-    if (S.st.c === 5) ax(100);
-    if (S.st.c === 10) ax(250);
-    if (S.st.c === 20) ax(500);
-  } else { S.st.c = 1; S.st.ld = d; }
-  ss();
+function updStreak(){
+  const d=new Date().toISOString().slice(0,10);if(S.st.ld===d)return;
+  const y=new Date();y.setDate(y.getDate()-1);
+  while(y.getDay()===0||y.getDay()===6)y.setDate(y.getDate()-1);
+  const ys=y.toISOString().slice(0,10);
+  if(S.st.ld===ys||S.st.c===0){S.st.c++;S.st.ld=d;if(S.st.c===5)addXP(100);if(S.st.c===10)addXP(250);if(S.st.c===20)addXP(500)}
+  else{S.st.c=1;S.st.ld=d}save();
+}
+
+// ─── AGENT HUB SYNC ────────────────────────────────────────────
+function postToSheet(session){
+  const date=session.s.slice(0,10);
+  const startTime=new Date(session.s).toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'});
+  const endTime=new Date(session.e).toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'});
+  const xpEarned=Math.floor(session.d/6);
+  const level=gl(S.xp.t);
+
+  // Row format: [row_type, timestamp, date, identity, session_start, session_end, duration_min, xp_earned, xp_total, level, level_title, streak, source, notes]
+  const row = [
+    'session',
+    new Date().toISOString(),
+    date,
+    session.i,
+    startTime,
+    endTime,
+    String(session.d),
+    String(xpEarned),
+    String(S.xp.t),
+    String(level.l),
+    level.t,
+    String(S.st.c),
+    'timer_app',
+    ''
+  ];
+
+  const payload=JSON.stringify({tab:'TimeTracking',rows:[row]});
+
+  fetch(AGENT_HUB_ENDPOINT,{
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body:payload
+  }).then(()=>{
+    syncMsg='✅ Synced til Agent Hub';
+    render();
+    setTimeout(()=>{syncMsg='';render()},3000);
+  }).catch(err=>{
+    syncMsg='⚠️ Sync fejlede — data gemt lokalt';
+    render();
+    setTimeout(()=>{syncMsg='';render()},5000);
+  });
+}
+
+function postDailySummary(){
+  const date=new Date().toISOString().slice(0,10);
+  const level=gl(S.xp.t);
+  const egMin=tmin('eg'),kdMin=tmin('kd'),okMin=tmin('ok'),total=ttot();
+  const goalMet=total>=DG;
+
+  const row=[
+    'daily_summary',
+    new Date().toISOString(),
+    date,
+    '',
+    '',
+    '',
+    String(total),
+    String(S.xp.d),
+    String(S.xp.t),
+    String(level.l),
+    level.t,
+    String(S.st.c),
+    'timer_app',
+    JSON.stringify({eg:egMin,kd:kdMin,ok:okMin,goal_met:goalMet})
+  ];
+
+  fetch(AGENT_HUB_ENDPOINT,{
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({tab:'TimeTracking',rows:[row]})
+  }).catch(()=>{});
 }
 
 // ─── TIMER ACTIONS ──────────────────────────────────────────────
-function start(i) {
-  if (S.at && S.at !== i) stop(true);
-  if (S.at === i) { stop(true); return; }
-  S.at = i; S.as = new Date().toISOString(); ncnt = 0; ss();
-  const t = new Date().toLocaleTimeString('da-DK', {hour:'2-digit',minute:'2-digit'});
-  sl(i, `🟢 ${ID[i].short} session startet kl. ${t}`);
-  sn(i); render();
+function start(i){
+  if(S.at&&S.at!==i)stop(true);
+  if(S.at===i){stop(true);return}
+  S.at=i;S.as=new Date().toISOString();ncnt=0;save();
+  const t=new Date().toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'});
+  slackMsg(i,`🟢 ${ID[i].short} session startet kl. ${t}`);
+  schedNotif(i);render();
 }
-function stop(msg = true) {
-  if (!S.at) return;
-  const i = S.at, st = new Date(S.as), d = Math.round((Date.now() - st.getTime()) / 60000);
-  S.ss.push({ id: Date.now(), i, s: S.as, e: new Date().toISOString(), d });
-  const xp = Math.floor(d / 6);
-  if (xp > 0) ax(xp);
-  if (msg) sl(i, `🔴 ${ID[i].short} session slut — ${d} min (+${xp} XP)`);
-  S.at = null; S.as = null; clearTimeout(ntid); ntid = null; ss(); cb(); render();
+
+function stop(msg=true){
+  if(!S.at)return;
+  const i=S.at,d=Math.round((Date.now()-new Date(S.as).getTime())/60000);
+  const session={id:Date.now(),i,s:S.as,e:new Date().toISOString(),d};
+  S.ss.push(session);
+  const xp=Math.floor(d/6);if(xp>0)addXP(xp);
+  if(msg)slackMsg(i,`🔴 ${ID[i].short} session slut — ${d} min (+${xp} XP)`);
+  S.at=null;S.as=null;clearTimeout(ntid);ntid=null;save();
+
+  // Sync to Agent Hub
+  postToSheet(session);
+
+  chkBonus();render();
 }
-function sl(i, t) {
-  const cfg = getWebhooks();
-  if (!cfg || !cfg[i]) return;
-  fetch(cfg[i], { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:t}) }).catch(() => {});
+
+function slackMsg(i,t){
+  const c=getCfg();if(!c||!c[i])return;
+  fetch(c[i],{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})}).catch(()=>{});
 }
 
 // ─── NOTIFICATIONS ──────────────────────────────────────────────
-function inn() {
-  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
-}
-function sn(i) {
+function initNotif(){if('Notification' in window&&Notification.permission==='default')Notification.requestPermission()}
+function schedNotif(i){
   clearTimeout(ntid);
-  ntid = setTimeout(() => {
-    if (S.at === i) {
-      ncnt++;
-      if ('Notification' in window && Notification.permission === 'granted')
-        new Notification(`⏰ ${ID[i].short}: ${ncnt} time${ncnt>1?'r':''} nået!`, { body:'Fortsæt eller stop.', tag:'bt' });
-      sn(i);
+  ntid=setTimeout(()=>{
+    if(S.at===i){ncnt++;
+      if('Notification' in window&&Notification.permission==='granted')
+        new Notification(`⏰ ${ID[i].short}: ${ncnt} time${ncnt>1?'r':''} nået!`,{body:'Fortsæt eller stop.',tag:'bt'});
+      schedNotif(i);
     }
-  }, 60 * 60 * 1000);
+  },60*60*1000);
 }
 
 // ─── RENDER ─────────────────────────────────────────────────────
-function render() {
-  const lv = gl(S.xp.t), nx = nl(S.xp.t);
-  const xi = nx ? S.xp.t - lv.x : 0, xn = nx ? nx.x - lv.x : 1, xp = Math.min(100, (xi/xn)*100);
-  const tt_ = tt(), dp = Math.min(100, (tt_/DG)*100), dc = tt_ >= DG;
-  const ne = ng(), wtt = wt();
-  const wp = Math.min(100, (wtt/(WG*1.2))*100), wgp = (WG/(WG*1.2))*100;
-  const ts = td().sort((a,b) => b.s.localeCompare(a.s)).slice(0,10);
+function render(){
+  const lv=gl(S.xp.t),nx=nxl(S.xp.t);
+  const xi=nx?S.xp.t-lv.x:0,xn=nx?nx.x-lv.x:1,xp=Math.min(100,(xi/xn)*100);
+  const tot=ttot(),dp=Math.min(100,(tot/DG)*100),dc=tot>=DG;
+  const ne=neg(),wtt=wtot();
+  const wp=Math.min(100,(wtt/(WG*1.2))*100),wgp=(WG/(WG*1.2))*100;
+  const ts=td().sort((a,b)=>b.s.localeCompare(a.s)).slice(0,10);
 
-  document.getElementById('app').innerHTML = `
-    <div class="header"><h1>⏱ Bishop Timer</h1><div class="lvl"><span>${lv.e}</span><span>Lvl ${lv.l} — ${lv.t}</span></div></div>
-    <div class="xpbox"><div class="labels"><span>${lv.e} ${lv.t}</span><span>${nx ? nx.e+' '+nx.t : 'MAX'}</span></div><div class="track"><div class="fill" style="width:${xp}%"></div></div><div class="info">+${S.xp.d} XP i dag · ${S.xp.t} total${nx ? ' · '+(nx.x-S.xp.t)+' til næste' : ''}</div></div>
-    <div class="dgoal ${dc?'done':''}"><div class="big">${fm(tt_)} / ${fm(DG)}</div><div class="sub">${dc ? '✅ Dagligt mål nået!' : Math.round(dp)+'% af dagens mål'}</div><div class="bar"><div class="barfill" style="width:${dp}%"></div></div></div>
-    ${ne.length>0 && ne.length<3 && tt_>30 ? `<div class="hint">💡 ${ne.map(i=>ID[i].short).join(' og ')} mangler tid i dag</div>` : ''}
-    ${S.st.c>0 ? `<div class="streak"><span class="f">🔥</span><span class="n">${S.st.c}</span><span class="t">dages streak</span></div>` : ''}
-    <div class="timers">${rc('eg')}${rc('kd')}${rc('ok')}</div>
-    <div class="wk"><h2>Denne uge</h2><div class="weekly-bars">
-      ${rb('eg',wm('eg'),WG/3)}${rb('kd',wm('kd'),WG/3)}${rb('ok',wm('ok'),WG/3)}
-      <div class="br" style="margin-top:4px;padding-top:8px;border-top:1px solid var(--border)"><div class="lb" style="color:var(--xp)">∑</div><div class="trk"><div class="fl tot" style="width:${wp}%"></div><div class="gm" style="left:${wgp}%"></div></div><div class="tm">${fm(wtt)}</div></div>
-    </div></div>
-    ${ts.length>0 ? `<div class="hist"><h2>Dagens sessioner</h2>${ts.map(s => {
-      const st = new Date(s.s).toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'});
-      const et = s.e ? new Date(s.e).toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'}) : 'aktiv';
-      const co = s.i==='eg'?'var(--eg)':s.i==='kd'?'var(--kd)':'var(--ok)';
-      return `<div class="hi"><div class="l"><div class="ds" style="background:${co}"></div><span class="tt">${st}–${et}</span></div><span class="d">${fm(s.d||0)}</span></div>`;
-    }).join('')}</div>` : ''}
-    ${S.slu ? `<div class="lo" onclick="dl()"><div class="c"><div class="e">${S.nl.e}</div><h2>LEVEL UP!</h2><p>Du er nu niveau ${S.nl.l}<br><strong>${S.nl.t}</strong></p><button onclick="dl()">Nice! 🎉</button></div></div>` : ''}
-    <div class="rst"><span onclick="if(confirm('Nulstil timer-data?')){localStorage.removeItem('${SK}');location.reload()}">Nulstil data</span><span onclick="if(confirm('Ændre webhooks?')){localStorage.removeItem('${CFG_KEY}');location.reload()}">Ændre webhooks</span></div>`;
+  document.getElementById('app').innerHTML=`
+  <div class="header"><h1>⏱ Bishop Timer</h1><div class="lvl"><span>${lv.e}</span><span>Lvl ${lv.l} — ${lv.t}</span></div></div>
+  <div class="xpbox"><div class="labels"><span>${lv.e} ${lv.t}</span><span>${nx?nx.e+' '+nx.t:'MAX'}</span></div><div class="track"><div class="fill" style="width:${xp}%"></div></div><div class="info">+${S.xp.d} XP i dag · ${S.xp.t} total${nx?' · '+(nx.x-S.xp.t)+' til næste':''}</div></div>
+  <div class="dgoal ${dc?'done':''}"><div class="big">${fm(tot)} / ${fm(DG)}</div><div class="sub">${dc?'✅ Dagligt mål nået!':Math.round(dp)+'% af dagens mål'}</div><div class="bar"><div class="barfill" style="width:${dp}%"></div></div></div>
+  ${ne.length>0&&ne.length<3&&tot>30?`<div class="hint">💡 ${ne.map(i=>ID[i].short).join(' og ')} mangler tid i dag</div>`:''}
+  ${syncMsg?`<div class="sync-status ${syncMsg.includes('⚠️')?'err':''}">${syncMsg}</div>`:''}
+  ${S.st.c>0?`<div class="streak"><span class="f">🔥</span><span class="n">${S.st.c}</span><span class="t">dages streak</span></div>`:''}
+  <div class="timers">${rc('eg')}${rc('kd')}${rc('ok')}</div>
+  <div class="wk"><h2>Denne uge</h2><div class="weekly-bars">
+    ${rb('eg',wmin('eg'),WG/3)}${rb('kd',wmin('kd'),WG/3)}${rb('ok',wmin('ok'),WG/3)}
+    <div class="br" style="margin-top:4px;padding-top:8px;border-top:1px solid var(--border)"><div class="lb" style="color:var(--xp)">∑</div><div class="trk"><div class="fl tot" style="width:${wp}%"></div><div class="gm" style="left:${wgp}%"></div></div><div class="tm">${fm(wtt)}</div></div>
+  </div></div>
+  ${ts.length>0?`<div class="hist"><h2>Dagens sessioner</h2>${ts.map(s=>{
+    const st=new Date(s.s).toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'});
+    const et=s.e?new Date(s.e).toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'}):'aktiv';
+    const co=s.i==='eg'?'var(--eg)':s.i==='kd'?'var(--kd)':'var(--ok)';
+    return`<div class="hi"><div class="l"><div class="ds" style="background:${co}"></div><span class="tt">${st}–${et}</span></div><span class="d">${fm(s.d||0)}</span></div>`;
+  }).join('')}</div>`:''}
+  ${S.slu?`<div class="lo" onclick="dismissLU()"><div class="c"><div class="e">${S.nl.e}</div><h2>LEVEL UP!</h2><p>Du er nu niveau ${S.nl.l}<br><strong>${S.nl.t}</strong></p><button onclick="dismissLU()">Nice! 🎉</button></div></div>`:''}
+  <div class="rst"><span onclick="if(confirm('Nulstil timer-data?')){localStorage.removeItem('${SK}');location.reload()}">Nulstil data</span><span onclick="if(confirm('Ændre webhooks?')){localStorage.removeItem('${CFG_KEY}');location.reload()}">Ændre webhooks</span></div>`;
 }
 
-function rc(i) {
-  const inf = ID[i], on = S.at === i, tm_ = tm(i);
-  const am = on ? Math.floor((Date.now()-new Date(S.as).getTime())/60000) : 0;
-  const tot = tm_ + am;
-  const hrs = on ? Math.floor((Date.now()-new Date(S.as).getTime())/3600000) : 0;
-  return `<div class="tc ${i} ${on?'on':''}" onclick="${on?'stop()':'start(\''+i+'\')'}"><div class="top"><div class="id"><div class="dot"></div>${inf.name}</div><div class="tag">${inf.short}</div></div><div class="time">${on?ge(S.as):'00:00:00'}</div><div class="meta">I dag: ${fm(tot)}</div>${on&&hrs>0?`<div class="notif">🔔 ${hrs} time${hrs>1?'r':''} registreret</div>`:''}</div>`;
+function rc(i){
+  const inf=ID[i],on=S.at===i,m=tmin(i);
+  const am=on?Math.floor((Date.now()-new Date(S.as).getTime())/60000):0;
+  const tot=m+am,hrs=on?Math.floor((Date.now()-new Date(S.as).getTime())/3600000):0;
+  return`<div class="tc ${i} ${on?'on':''}" onclick="${on?'stop()':'start(\''+i+'\')'}"><div class="top"><div class="id"><div class="dot"></div>${inf.name}</div><div class="tag">${inf.short}</div></div><div class="time">${on?ge(S.as):'00:00:00'}</div><div class="meta">I dag: ${fm(tot)}</div>${on&&hrs>0?`<div class="notif">🔔 ${hrs} time${hrs>1?'r':''} registreret</div>`:''}</div>`;
 }
-
-function rb(i, m, g) {
-  const mx = g*2, p = Math.min(100,(m/mx)*100), gp = (g/mx)*100;
-  return `<div class="br"><div class="lb">${ID[i].short}</div><div class="trk"><div class="fl ${i}" style="width:${p}%"></div><div class="gm" style="left:${gp}%"></div></div><div class="tm">${fm(m)}</div></div>`;
+function rb(i,m,g){
+  const mx=g*2,p=Math.min(100,(m/mx)*100),gp=(g/mx)*100;
+  return`<div class="br"><div class="lb">${ID[i].short}</div><div class="trk"><div class="fl ${i}" style="width:${p}%"></div><div class="gm" style="left:${gp}%"></div></div><div class="tm">${fm(m)}</div></div>`;
 }
-
-function dl() { S.slu = false; S.nl = null; ss(); render(); }
+function dismissLU(){S.slu=false;S.nl=null;save();render()}
 
 // ─── INIT ───────────────────────────────────────────────────────
-function init() {
-  const cfg = getWebhooks();
-  if (!cfg || !cfg.eg || !cfg.kd || !cfg.ok) {
-    renderSetup();
-    return;
-  }
-  S = loadState();
-  inn();
-  render();
-  setInterval(() => { if (S.at) render(); }, 1000);
+function init(){
+  const c=getCfg();
+  if(!c||!c.eg||!c.kd||!c.ok){renderSetup();return}
+  S=loadS();initNotif();render();
+  setInterval(()=>{if(S.at)render()},1000);
+  // Post daily summary at midnight
+  const now=new Date(),midnight=new Date(now);
+  midnight.setHours(23,59,0,0);
+  const msToMidnight=midnight.getTime()-now.getTime();
+  if(msToMidnight>0)setTimeout(()=>postDailySummary(),msToMidnight);
 }
 
 init();
