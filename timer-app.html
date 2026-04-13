@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Bishop Timer</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0f;--surface:#14141f;--surface2:#1e1e2e;--border:#2a2a3e;--text:#e8e8f0;--text-dim:#8888a0;--text-muted:#555570;--eg:#f59e0b;--eg-glow:#f59e0b40;--kd:#3b82f6;--kd-glow:#3b82f640;--ok:#22c55e;--ok-glow:#22c55e40;--xp:#a855f7;--xp-bg:#a855f718;--radius:16px}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+.app{max-width:420px;margin:0 auto;padding:16px 16px 120px}
+.header{text-align:center;padding:24px 0 16px}
+.header h1{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)}
+.header .lvl{display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:8px 16px;border-radius:99px;background:var(--xp-bg);border:1px solid var(--xp);font-size:.85rem;font-weight:600}
+.xpbox{margin:16px 0;padding:16px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border)}
+.xpbox .labels{display:flex;justify-content:space-between;margin-bottom:8px;font-size:.75rem;color:var(--text-dim)}
+.xpbox .track{height:8px;background:var(--surface2);border-radius:99px;overflow:hidden}
+.xpbox .fill{height:100%;background:linear-gradient(90deg,var(--xp),#c084fc);border-radius:99px;transition:width 1s ease}
+.xpbox .info{text-align:center;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--xp)}
+.dgoal{text-align:center;padding:14px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin:16px 0}
+.dgoal .big{font-family:'JetBrains Mono',monospace;font-size:1.8rem;font-weight:800}
+.dgoal .sub{font-size:.8rem;color:var(--text-dim);margin-top:4px}
+.dgoal .bar{height:6px;background:var(--surface2);border-radius:99px;overflow:hidden;margin-top:10px}
+.dgoal .barfill{height:100%;background:linear-gradient(90deg,#22c55e,#4ade80);border-radius:99px;transition:width .8s ease}
+.dgoal.done .barfill{background:linear-gradient(90deg,var(--eg),#fbbf24)}
+.dgoal.done .big{color:#22c55e}
+.hint{text-align:center;font-size:.8rem;color:var(--text-muted);padding:4px 12px;margin-top:-8px;margin-bottom:12px;font-style:italic}
+.timers{display:flex;flex-direction:column;gap:12px;margin:16px 0}
+.tc{position:relative;padding:20px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .2s;overflow:hidden;-webkit-user-select:none;user-select:none}
+.tc:active{transform:scale(.98)}
+.tc.on{border-color:var(--c)}
+.tc.on::before{content:'';position:absolute;inset:0;background:var(--g);opacity:.15;pointer-events:none}
+.tc .top{display:flex;justify-content:space-between;align-items:center}
+.tc .id{font-weight:700;font-size:1.1rem;display:flex;align-items:center;gap:10px}
+.tc .dot{width:10px;height:10px;border-radius:50%;background:var(--c);flex-shrink:0}
+.tc .tag{font-size:.7rem;font-weight:600;padding:3px 8px;border-radius:6px;letter-spacing:1px;text-transform:uppercase;background:var(--c)}
+.tc.eg .tag{color:#000}.tc.kd .tag{color:#fff}.tc.ok .tag{color:#000}
+.tc .time{font-family:'JetBrains Mono',monospace;font-size:2rem;font-weight:800;margin-top:12px;font-variant-numeric:tabular-nums;color:var(--text-muted);transition:color .3s}
+.tc.on .time{color:var(--text)}
+.tc .meta{font-size:.8rem;color:var(--text-dim);margin-top:4px}
+.tc .notif{font-size:.7rem;color:var(--text-muted);margin-top:6px}
+.tc.eg{--c:var(--eg);--g:var(--eg-glow)}
+.tc.kd{--c:var(--kd);--g:var(--kd-glow)}
+.tc.ok{--c:var(--ok);--g:var(--ok-glow)}
+.wk{padding:16px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin:16px 0}
+.wk h2{font-size:.85rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.br{display:flex;align-items:center;gap:10px;margin-bottom:8px}.br:last-child{margin-bottom:0}
+.br .lb{width:28px;font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:700;color:var(--text-dim)}
+.br .trk{flex:1;height:24px;background:var(--surface2);border-radius:8px;overflow:hidden;position:relative}
+.br .fl{height:100%;border-radius:8px;transition:width .8s ease}
+.br .fl.eg{background:linear-gradient(90deg,var(--eg),#fbbf24)}.br .fl.kd{background:linear-gradient(90deg,var(--kd),#60a5fa)}.br .fl.ok{background:linear-gradient(90deg,var(--ok),#4ade80)}.br .fl.tot{background:linear-gradient(90deg,var(--xp),#c084fc)}
+.br .tm{width:55px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:.8rem;font-weight:600}
+.gm{position:absolute;height:100%;width:2px;background:rgba(255,255,255,.3)}
+.streak{text-align:center;padding:12px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin:16px 0}
+.streak .f{font-size:1.5rem}.streak .n{font-family:'JetBrains Mono',monospace;font-size:1.2rem;font-weight:800;margin:0 4px}.streak .t{font-size:.8rem;color:var(--text-dim)}
+.hist{padding:16px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin:16px 0}
+.hist h2{font-size:.85rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.hi{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}.hi:last-child{border-bottom:none}
+.hi .l{display:flex;align-items:center;gap:8px}
+.hi .ds{width:8px;height:8px;border-radius:50%}
+.hi .tt{font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--text-dim)}
+.hi .d{font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:600}
+.lo{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:100}
+.lo .c{text-align:center;padding:40px;animation:pop .5s ease}
+.lo .c .e{font-size:4rem;margin-bottom:16px}
+.lo .c h2{font-size:1.5rem;font-weight:800;margin-bottom:8px}
+.lo .c p{color:var(--text-dim);font-size:.9rem;line-height:1.5}
+.lo .c button{margin-top:24px;padding:12px 32px;border-radius:12px;border:none;background:var(--xp);color:#fff;font-weight:700;font-size:1rem;cursor:pointer;font-family:'Outfit',sans-serif}
+.rst{text-align:center;margin:24px 0;font-size:.75rem;color:var(--text-muted)}.rst span{cursor:pointer;text-decoration:underline;margin:0 8px}
+/* Setup screen */
+.setup{max-width:420px;margin:40px auto;padding:24px}
+.setup h1{font-family:'JetBrains Mono',monospace;font-size:1.2rem;text-align:center;margin-bottom:8px}
+.setup p{text-align:center;color:var(--text-dim);font-size:.85rem;margin-bottom:24px}
+.setup label{display:block;font-size:.85rem;font-weight:600;margin:16px 0 6px;color:var(--text-dim)}
+.setup input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.85rem;font-family:'JetBrains Mono',monospace}
+.setup input:focus{outline:none;border-color:var(--xp)}
+.setup button{width:100%;padding:14px;border-radius:12px;border:none;background:var(--xp);color:#fff;font-weight:700;font-size:1rem;cursor:pointer;margin-top:24px;font-family:'Outfit',sans-serif}
+.setup button:active{transform:scale(.98)}
+.setup .note{margin-top:16px;font-size:.75rem;color:var(--text-muted);text-align:center}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}.tc.on .dot{animation:pulse 2s ease infinite}
+@keyframes pop{0%{transform:scale(.5);opacity:0}50%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+// ─── CONFIG (from localStorage, NEVER hardcoded) ───────────────
+const CFG_KEY = 'bishop_timer_cfg';
+const SK = 'bishop_timer_v2';
+
+const ID = {
+  eg: { name: 'Easygoing', short: 'EG' },
+  kd: { name: 'Kroijer Digital', short: 'KD' },
+  ok: { name: 'Personal', short: 'OK' }
+};
+const LV = [
+  { l:1, x:0, t:'Rookie', e:'🌱' }, { l:2, x:200, t:'Apprentice', e:'⚡' },
+  { l:3, x:500, t:'Professional', e:'💼' }, { l:4, x:1000, t:'Expert', e:'🎯' },
+  { l:5, x:2000, t:'Master', e:'🏆' }, { l:6, x:3500, t:'Grandmaster', e:'👑' },
+  { l:7, x:6000, t:'Legend', e:'🌟' }
+];
+const DG = 180, WG = 900;
+
+// ─── WEBHOOK CONFIG ─────────────────────────────────────────────
+function getWebhooks() {
+  try { return JSON.parse(localStorage.getItem(CFG_KEY)) || null; } catch(e) { return null; }
+}
+
+function saveWebhooks(cfg) {
+  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+}
+
+function renderSetup() {
+  const cfg = getWebhooks();
+  document.getElementById('app').innerHTML = `
+    <div class="setup">
+      <h1>⏱ Bishop Timer Setup</h1>
+      <p>Indtast dine Slack webhook-URL'er. De gemmes kun lokalt i din browser — aldrig i koden.</p>
+      <label>🟡 Easygoing (#easygoing-agent)</label>
+      <input id="wh_eg" placeholder="https://hooks.slack.com/services/..." value="${cfg?.eg || ''}">
+      <label>🔵 Kroijer Digital (#digital-agent)</label>
+      <input id="wh_kd" placeholder="https://hooks.slack.com/services/..." value="${cfg?.kd || ''}">
+      <label>🟢 Personal (#personal-agent)</label>
+      <input id="wh_ok" placeholder="https://hooks.slack.com/services/..." value="${cfg?.ok || ''}">
+      <label>📝 Content (#content)</label>
+      <input id="wh_content" placeholder="https://hooks.slack.com/services/..." value="${cfg?.content || ''}">
+      <button onclick="saveSetup()">Gem & Start →</button>
+      <div class="note">🔒 Webhook-URL'er gemmes kun i din browsers localStorage.<br>De sendes aldrig til en server og er ikke synlige i kildekoden.</div>
+    </div>`;
+}
+
+function saveSetup() {
+  const cfg = {
+    eg: document.getElementById('wh_eg').value.trim(),
+    kd: document.getElementById('wh_kd').value.trim(),
+    ok: document.getElementById('wh_ok').value.trim(),
+    content: document.getElementById('wh_content').value.trim()
+  };
+  if (!cfg.eg || !cfg.kd || !cfg.ok) {
+    alert('EG, KD og OK webhooks er påkrævet.');
+    return;
+  }
+  saveWebhooks(cfg);
+  init();
+}
+
+// ─── STATE ──────────────────────────────────────────────────────
+let ntid = null, ncnt = 0;
+
+function defaultState() {
+  return { at:null, as:null, ss:[], xp:{t:0,d:0,ld:null}, st:{c:0,ld:null}, slu:false, nl:null };
+}
+
+let S = loadState();
+
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SK));
+    if (s) {
+      const d = new Date().toISOString().slice(0,10);
+      if (s.xp.ld !== d) { s.xp.d = 0; s.xp.ld = d; }
+      return s;
+    }
+  } catch(e) {}
+  return defaultState();
+}
+
+function ss() { localStorage.setItem(SK, JSON.stringify(S)); }
+
+// ─── HELPERS ────────────────────────────────────────────────────
+function gl(x) { let c = LV[0]; for (const l of LV) if (x >= l.x) c = l; else break; return c; }
+function nl(x) { for (const l of LV) if (x < l.x) return l; return null; }
+function td() { const d = new Date().toISOString().slice(0,10); return S.ss.filter(s => s.s.slice(0,10) === d); }
+function tm(i) { return td().filter(s => s.i === i).reduce((a,s) => a + (s.d||0), 0); }
+function tt() {
+  const a = S.at ? Math.floor((Date.now() - new Date(S.as).getTime()) / 60000) : 0;
+  return td().reduce((s,x) => s + (x.d||0), 0) + a;
+}
+function ws() {
+  const n = new Date(), m = new Date(n);
+  m.setDate(n.getDate() - ((n.getDay()+6)%7)); m.setHours(0,0,0,0);
+  return S.ss.filter(s => s.s.slice(0,10) >= m.toISOString().slice(0,10));
+}
+function wm(i) { return ws().filter(s => s.i === i).reduce((a,s) => a + (s.d||0), 0); }
+function wt() { return ws().reduce((a,s) => a + (s.d||0), 0); }
+function ng() {
+  const t = new Set(td().map(s => s.i));
+  if (S.at) t.add(S.at);
+  return ['eg','kd','ok'].filter(i => !t.has(i));
+}
+function fm(m) {
+  if (m < 60) return Math.round(m) + 'm';
+  const h = Math.floor(m/60), r = Math.round(m%60);
+  return r > 0 ? h + 't ' + r + 'm' : h + 't';
+}
+function ge(iso) {
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  return String(Math.floor(s/3600)).padStart(2,'0') + ':' + String(Math.floor((s%3600)/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+}
+
+// ─── XP ─────────────────────────────────────────────────────────
+function ax(a) {
+  const o = gl(S.xp.t); S.xp.t += a; S.xp.d += a;
+  S.xp.ld = new Date().toISOString().slice(0,10);
+  const n = gl(S.xp.t);
+  if (n.l > o.l) { S.slu = true; S.nl = n; }
+  ss();
+}
+function cb() {
+  const d = new Date().toISOString().slice(0,10), k = 'b_' + d;
+  const aw = JSON.parse(localStorage.getItem(k) || '{}');
+  const t = tt();
+  if (t >= DG && !aw.dg) { ax(50); aw.dg = true; us(); }
+  const em = tm('eg') + (S.at==='eg' ? Math.floor((Date.now()-new Date(S.as).getTime())/60000) : 0);
+  const km = tm('kd') + (S.at==='kd' ? Math.floor((Date.now()-new Date(S.as).getTime())/60000) : 0);
+  const om = tm('ok') + (S.at==='ok' ? Math.floor((Date.now()-new Date(S.as).getTime())/60000) : 0);
+  if (em >= 30 && km >= 30 && om >= 30 && !aw.at) { ax(25); aw.at = true; }
+  localStorage.setItem(k, JSON.stringify(aw));
+}
+function us() {
+  const d = new Date().toISOString().slice(0,10);
+  if (S.st.ld === d) return;
+  const y = new Date(); y.setDate(y.getDate()-1);
+  while (y.getDay()===0 || y.getDay()===6) y.setDate(y.getDate()-1);
+  const ys = y.toISOString().slice(0,10);
+  if (S.st.ld === ys || S.st.c === 0) {
+    S.st.c++; S.st.ld = d;
+    if (S.st.c === 5) ax(100);
+    if (S.st.c === 10) ax(250);
+    if (S.st.c === 20) ax(500);
+  } else { S.st.c = 1; S.st.ld = d; }
+  ss();
+}
+
+// ─── TIMER ACTIONS ──────────────────────────────────────────────
+function start(i) {
+  if (S.at && S.at !== i) stop(true);
+  if (S.at === i) { stop(true); return; }
+  S.at = i; S.as = new Date().toISOString(); ncnt = 0; ss();
+  const t = new Date().toLocaleTimeString('da-DK', {hour:'2-digit',minute:'2-digit'});
+  sl(i, `🟢 ${ID[i].short} session startet kl. ${t}`);
+  sn(i); render();
+}
+function stop(msg = true) {
+  if (!S.at) return;
+  const i = S.at, st = new Date(S.as), d = Math.round((Date.now() - st.getTime()) / 60000);
+  S.ss.push({ id: Date.now(), i, s: S.as, e: new Date().toISOString(), d });
+  const xp = Math.floor(d / 6);
+  if (xp > 0) ax(xp);
+  if (msg) sl(i, `🔴 ${ID[i].short} session slut — ${d} min (+${xp} XP)`);
+  S.at = null; S.as = null; clearTimeout(ntid); ntid = null; ss(); cb(); render();
+}
+function sl(i, t) {
+  const cfg = getWebhooks();
+  if (!cfg || !cfg[i]) return;
+  fetch(cfg[i], { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:t}) }).catch(() => {});
+}
+
+// ─── NOTIFICATIONS ──────────────────────────────────────────────
+function inn() {
+  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+}
+function sn(i) {
+  clearTimeout(ntid);
+  ntid = setTimeout(() => {
+    if (S.at === i) {
+      ncnt++;
+      if ('Notification' in window && Notification.permission === 'granted')
+        new Notification(`⏰ ${ID[i].short}: ${ncnt} time${ncnt>1?'r':''} nået!`, { body:'Fortsæt eller stop.', tag:'bt' });
+      sn(i);
+    }
+  }, 60 * 60 * 1000);
+}
+
+// ─── RENDER ─────────────────────────────────────────────────────
+function render() {
+  const lv = gl(S.xp.t), nx = nl(S.xp.t);
+  const xi = nx ? S.xp.t - lv.x : 0, xn = nx ? nx.x - lv.x : 1, xp = Math.min(100, (xi/xn)*100);
+  const tt_ = tt(), dp = Math.min(100, (tt_/DG)*100), dc = tt_ >= DG;
+  const ne = ng(), wtt = wt();
+  const wp = Math.min(100, (wtt/(WG*1.2))*100), wgp = (WG/(WG*1.2))*100;
+  const ts = td().sort((a,b) => b.s.localeCompare(a.s)).slice(0,10);
+
+  document.getElementById('app').innerHTML = `
+    <div class="header"><h1>⏱ Bishop Timer</h1><div class="lvl"><span>${lv.e}</span><span>Lvl ${lv.l} — ${lv.t}</span></div></div>
+    <div class="xpbox"><div class="labels"><span>${lv.e} ${lv.t}</span><span>${nx ? nx.e+' '+nx.t : 'MAX'}</span></div><div class="track"><div class="fill" style="width:${xp}%"></div></div><div class="info">+${S.xp.d} XP i dag · ${S.xp.t} total${nx ? ' · '+(nx.x-S.xp.t)+' til næste' : ''}</div></div>
+    <div class="dgoal ${dc?'done':''}"><div class="big">${fm(tt_)} / ${fm(DG)}</div><div class="sub">${dc ? '✅ Dagligt mål nået!' : Math.round(dp)+'% af dagens mål'}</div><div class="bar"><div class="barfill" style="width:${dp}%"></div></div></div>
+    ${ne.length>0 && ne.length<3 && tt_>30 ? `<div class="hint">💡 ${ne.map(i=>ID[i].short).join(' og ')} mangler tid i dag</div>` : ''}
+    ${S.st.c>0 ? `<div class="streak"><span class="f">🔥</span><span class="n">${S.st.c}</span><span class="t">dages streak</span></div>` : ''}
+    <div class="timers">${rc('eg')}${rc('kd')}${rc('ok')}</div>
+    <div class="wk"><h2>Denne uge</h2><div class="weekly-bars">
+      ${rb('eg',wm('eg'),WG/3)}${rb('kd',wm('kd'),WG/3)}${rb('ok',wm('ok'),WG/3)}
+      <div class="br" style="margin-top:4px;padding-top:8px;border-top:1px solid var(--border)"><div class="lb" style="color:var(--xp)">∑</div><div class="trk"><div class="fl tot" style="width:${wp}%"></div><div class="gm" style="left:${wgp}%"></div></div><div class="tm">${fm(wtt)}</div></div>
+    </div></div>
+    ${ts.length>0 ? `<div class="hist"><h2>Dagens sessioner</h2>${ts.map(s => {
+      const st = new Date(s.s).toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'});
+      const et = s.e ? new Date(s.e).toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'}) : 'aktiv';
+      const co = s.i==='eg'?'var(--eg)':s.i==='kd'?'var(--kd)':'var(--ok)';
+      return `<div class="hi"><div class="l"><div class="ds" style="background:${co}"></div><span class="tt">${st}–${et}</span></div><span class="d">${fm(s.d||0)}</span></div>`;
+    }).join('')}</div>` : ''}
+    ${S.slu ? `<div class="lo" onclick="dl()"><div class="c"><div class="e">${S.nl.e}</div><h2>LEVEL UP!</h2><p>Du er nu niveau ${S.nl.l}<br><strong>${S.nl.t}</strong></p><button onclick="dl()">Nice! 🎉</button></div></div>` : ''}
+    <div class="rst"><span onclick="if(confirm('Nulstil timer-data?')){localStorage.removeItem('${SK}');location.reload()}">Nulstil data</span><span onclick="if(confirm('Ændre webhooks?')){localStorage.removeItem('${CFG_KEY}');location.reload()}">Ændre webhooks</span></div>`;
+}
+
+function rc(i) {
+  const inf = ID[i], on = S.at === i, tm_ = tm(i);
+  const am = on ? Math.floor((Date.now()-new Date(S.as).getTime())/60000) : 0;
+  const tot = tm_ + am;
+  const hrs = on ? Math.floor((Date.now()-new Date(S.as).getTime())/3600000) : 0;
+  return `<div class="tc ${i} ${on?'on':''}" onclick="${on?'stop()':'start(\''+i+'\')'}"><div class="top"><div class="id"><div class="dot"></div>${inf.name}</div><div class="tag">${inf.short}</div></div><div class="time">${on?ge(S.as):'00:00:00'}</div><div class="meta">I dag: ${fm(tot)}</div>${on&&hrs>0?`<div class="notif">🔔 ${hrs} time${hrs>1?'r':''} registreret</div>`:''}</div>`;
+}
+
+function rb(i, m, g) {
+  const mx = g*2, p = Math.min(100,(m/mx)*100), gp = (g/mx)*100;
+  return `<div class="br"><div class="lb">${ID[i].short}</div><div class="trk"><div class="fl ${i}" style="width:${p}%"></div><div class="gm" style="left:${gp}%"></div></div><div class="tm">${fm(m)}</div></div>`;
+}
+
+function dl() { S.slu = false; S.nl = null; ss(); render(); }
+
+// ─── INIT ───────────────────────────────────────────────────────
+function init() {
+  const cfg = getWebhooks();
+  if (!cfg || !cfg.eg || !cfg.kd || !cfg.ok) {
+    renderSetup();
+    return;
+  }
+  S = loadState();
+  inn();
+  render();
+  setInterval(() => { if (S.at) render(); }, 1000);
+}
+
+init();
+</script>
+</body>
+</html>
