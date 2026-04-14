@@ -687,6 +687,7 @@ const app = () => document.getElementById('app');
 function render() {
   switch(state.screen) {
     case 'home': return renderHome();
+    case 'settings': return renderSettings();
     case 'warmup': return renderWarmup();
     case 'exercise': return renderExercise();
     case 'rest': return renderRest();
@@ -695,6 +696,36 @@ function render() {
     case 'mobility': return renderMobilityExercise();
     case 'mobility_done': return renderMobilityDone();
   }
+}
+
+function renderSettings() {
+  const currentWebhook = localStorage.getItem('bishop_training_webhook') || '';
+  const saved = currentWebhook ? true : false;
+  app().innerHTML = `
+    <div>
+      <button style="background:none;border:none;color:var(--gray);font-weight:600;cursor:pointer;margin-bottom:16px" onclick="state.screen='home';render()">← Tilbage</button>
+      <div class="card" style="border-left:4px solid var(--blue)">
+        <h2>⚙️ Indstillinger</h2>
+        <p class="text-sm text-gray mt-2">Health Data endpoint — bruges til at sende træningslog automatisk til Bishop-systemet.</p>
+        <input id="settings-webhook" type="text" placeholder="https://script.google.com/macros/s/..." 
+          value="${currentWebhook}"
+          style="width:100%;padding:12px;border-radius:10px;border:2px solid #e5e7eb;font-size:.75rem;font-family:monospace;margin-top:12px;background:var(--light)">
+        <button class="btn btn-primary mt-3" onclick="saveSettingsWebhook()">
+          ${saved ? 'Opdater' : 'Gem'} webhook
+        </button>
+        ${saved ? '<p class="text-sm text-center mt-2" style="color:var(--green)">✓ Webhook er konfigureret</p>' : ''}
+        <p class="text-xs text-gray mt-3">🔒 Gemmes kun lokalt i din browser (localStorage). Aldrig i koden.</p>
+      </div>
+    </div>`;
+}
+
+function saveSettingsWebhook() {
+  const url = document.getElementById('settings-webhook').value.trim();
+  if (!url) { alert('Indtast en URL'); return; }
+  localStorage.setItem('bishop_training_webhook', url);
+  state.webhook = url;
+  state.screen = 'home';
+  render();
 }
 
 function renderHome() {
@@ -809,6 +840,9 @@ function renderHome() {
 
       <button class="btn btn-primary mt-3" onclick="startWorkout()">
         Start træning →
+      </button>
+      <button class="btn btn-outline mt-2" onclick="state.screen='settings';render()" style="font-size:.85rem">
+        ⚙️ Indstillinger ${!state.webhook ? '(webhook mangler)' : ''}
       </button>
     </div>`;
 }
