@@ -450,7 +450,7 @@ let state = {
   screen: 'home',
   sessionKey: params.get('session') || autoSession(),
   readiness: params.get('readiness') || 'normal',
-  webhook: params.get('webhook') || '',
+  webhook: params.get('webhook') || localStorage.getItem('bishop_training_webhook') || '',
   exIndex: 0,
   setIndex: 0,
   startTime: null,
@@ -1643,13 +1643,40 @@ function showFallbackSave(payload) {
   const summary = formatSummaryText(payload);
   document.getElementById('save-status').innerHTML = `
     <div class="save-status save-err" style="background:#fef3c7;color:#92400e">
-      ⚠️ Ingen webhook konfigureret. Kopiér oversigten nedenfor til ClickUp Brain Dump.
+      ⚠️ Ingen webhook konfigureret.
+    </div>
+    <div class="card mt-2" style="text-align:center">
+      <p class="text-sm text-gray mb-2">Indtast Health Data endpoint for at sende træningslog automatisk:</p>
+      <input id="webhook-setup" type="text" placeholder="https://script.google.com/macros/s/..." 
+        style="width:100%;padding:10px;border-radius:10px;border:2px solid #e5e7eb;font-size:.75rem;font-family:monospace;margin-bottom:8px"
+        value="${localStorage.getItem('bishop_training_webhook') || ''}">
+      <button class="btn btn-primary btn-sm" onclick="saveWebhookAndRetry()" style="width:100%;margin-bottom:12px">Gem & send træningslog</button>
     </div>
     <div class="card mt-2">
       <pre style="font-size:.75rem;white-space:pre-wrap;word-break:break-word;font-family:monospace">${summary}</pre>
       <button class="btn btn-outline mt-2" onclick="copyToClipboard()">📋 Kopiér til udklipsholder</button>
     </div>`;
   window._workoutSummary = summary;
+  window._lastPayload = payload;
+}
+
+function saveWebhookAndRetry() {
+  const url = document.getElementById('webhook-setup').value.trim();
+  if (!url) { alert('Indtast en URL'); return; }
+  localStorage.setItem('bishop_training_webhook', url);
+  state.webhook = url;
+  // Retry sending
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(window._lastPayload)
+  })
+  .then(r => {
+    document.getElementById('save-status').innerHTML = '<div class="save-status save-ok">✓ Webhook gemt & træningslog sendt! Training Agent samler den op.</div>';
+  })
+  .catch(e => {
+    document.getElementById('save-status').innerHTML = '<div class="save-status save-err">❌ Kunne ikke sende. Tjek URL og prøv igen.</div>';
+  });
 }
 
 function formatSummaryText(p) {
