@@ -68,6 +68,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 .lo .c p{color:var(--text-dim);font-size:.9rem;line-height:1.5}
 .lo .c button{margin-top:24px;padding:12px 32px;border-radius:12px;border:none;background:var(--xp);color:#fff;font-weight:700;font-size:1rem;cursor:pointer;font-family:'Outfit',sans-serif}
 .rst{text-align:center;margin:24px 0;font-size:.75rem;color:var(--text-muted)}.rst span{cursor:pointer;text-decoration:underline;margin:0 8px}
+.qbtn{padding:10px 16px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-weight:600;font-size:.9rem;cursor:pointer;font-family:'Outfit',sans-serif}.qbtn:active{transform:scale(.95);background:var(--xp);color:#fff}
 .sync-status{text-align:center;font-size:.7rem;color:var(--text-muted);margin-top:-12px;margin-bottom:8px}
 .sync-status.err{color:var(--eg)}
 .setup{max-width:420px;margin:40px auto;padding:24px}
@@ -360,13 +361,85 @@ function rb(i,m,g){
 }
 function dismissLU(){S.slu=false;S.nl=null;save();render()}
 
+// ─── OVERFLOW CHECK ─────────────────────────────────────────────
+const MAX_SESSION_MIN = 60; // 1 hour — prompt when reopening app
+
+function checkOverflow(){
+  if(!S.at||!S.as) return false;
+  const elapsed=Math.floor((Date.now()-new Date(S.as).getTime())/60000);
+  if(elapsed>MAX_SESSION_MIN){
+    S.overflow={identity:S.at,started:S.as,elapsed};
+    return true;
+  }
+  return false;
+}
+
+function renderOverflow(){
+  const o=S.overflow;
+  const inf=ID[o.identity];
+  const startTime=new Date(o.started).toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'});
+  const hrs=Math.floor(o.elapsed/60);
+  const mins=o.elapsed%60;
+  document.getElementById('app').innerHTML=`
+  <div style="padding-top:40px">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:3rem">⏰</div>
+      <h2 style="margin-top:12px;font-size:1.3rem">Timer glemt?</h2>
+      <p style="color:var(--text-dim);margin-top:8px;line-height:1.5">
+        Din <strong>${inf.name}</strong> timer har kørt i <strong>${hrs}t ${mins}m</strong><br>
+        (startet kl. ${startTime})
+      </p>
+    </div>
+    <div style="background:var(--surface);border-radius:var(--radius);padding:20px;border:1px solid var(--border)">
+      <p style="font-size:.9rem;font-weight:600;margin-bottom:12px">Hvor lang tid arbejdede du reelt?</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <button class="qbtn" onclick="resolveOverflow(30)">30m</button>
+        <button class="qbtn" onclick="resolveOverflow(60)">1t</button>
+        <button class="qbtn" onclick="resolveOverflow(90)">1½t</button>
+        <button class="qbtn" onclick="resolveOverflow(120)">2t</button>
+        <button class="qbtn" onclick="resolveOverflow(180)">3t</button>
+        <button class="qbtn" onclick="resolveOverflow(240)">4t</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="custom-min" type="number" placeholder="Antal min" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:.9rem">
+        <button style="padding:10px 16px;border-radius:10px;border:none;background:var(--xp);color:#fff;font-weight:700;cursor:pointer" onclick="resolveOverflow(parseInt(document.getElementById('custom-min').value)||60)">OK</button>
+      </div>
+      <button style="width:100%;margin-top:12px;padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text-muted);font-size:.85rem;cursor:pointer" onclick="resolveOverflow(0)">Annullér session (log ingenting)</button>
+    </div>
+  </div>`;
+}
+
+function resolveOverflow(realMinutes){
+  const o=S.overflow;
+  if(realMinutes>0){
+    const session={id:Date.now(),i:o.identity,s:o.started,e:new Date().toISOString(),d:realMinutes};
+    S.ss.push(session);
+    const xp=Math.floor(realMinutes/6);
+    if(xp>0)addXP(xp);
+    slackMsg(o.identity,`🔴 ${ID[o.identity].short} session slut — ${realMinutes} min (korrigeret fra ${Math.floor(o.elapsed/60)}t+) (+${xp} XP)`);
+    postToSheet(session);
+  } else {
+    slackMsg(o.identity,`🔴 ${ID[o.identity].short} session annulleret (timer glemt, ingen tid logget)`);
+  }
+  S.at=null;S.as=null;S.overflow=null;
+  clearTimeout(ntid);ntid=null;save();chkBonus();render();
+}
+
 // ─── INIT ───────────────────────────────────────────────────────
 function init(){
   const c=getCfg();
   if(!c||!c.eg||!c.kd||!c.ok){renderSetup();return}
-  S=loadS();initNotif();render();
-  setInterval(()=>{if(S.at)render()},1000);
-  // Post daily summary at midnight
+  S=loadS();initNotif();
+  // Check for overflow timer
+  if(checkOverflow()){renderOverflow();return}
+  render();
+  setInterval(()=>{
+    if(S.at){
+      // Check overflow during active session too
+      if(checkOverflow()){renderOverflow();return}
+      render();
+    }
+  },1000);
   const now=new Date(),midnight=new Date(now);
   midnight.setHours(23,59,0,0);
   const msToMidnight=midnight.getTime()-now.getTime();
