@@ -791,7 +791,10 @@ function renderHome() {
   app().innerHTML = `
     <div style="padding-top:24px">
       <div class="mb-4">
-        <p class="text-sm text-gray">${formatDate()}</p>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <p class="text-sm text-gray">${formatDate()}</p>
+          <span style="font-family:monospace;font-size:.7rem;color:#9ca3af;background:#f3f4f6;padding:3px 8px;border-radius:6px">v3.1</span>
+        </div>
         <h1 class="mt-1">${s.name}</h1>
         <p class="text-sm text-gray mt-1">${s.focus}</p>
         <div class="flex gap-2 mt-3 flex-wrap">
@@ -1054,8 +1057,11 @@ function renderCooldown() {
 function renderDone() {
   const s = getSession();
   const totalSeconds = getWorkoutElapsedSeconds();
-  const dur = state.startTime ? Math.round((Date.now() - state.startTime) / 60000) : '?';
+  const dur = state.startTime ? Math.round((Date.now() - state.startTime) / 60000) : 0;
   const r = getReadiness();
+
+  // Use edited duration if user has edited it, otherwise default
+  if (state.editedDurationMin === undefined) state.editedDurationMin = dur;
 
   let totalSets = 0;
   let totalRPEs = [];
@@ -1083,6 +1089,7 @@ function renderDone() {
 
   const avgRPE = totalRPEs.length > 0 ? (totalRPEs.reduce((a, b) => a + b, 0) / totalRPEs.length).toFixed(1) : null;
   const durationFormatted = formatTime(totalSeconds);
+  const hasWebhook = !!state.webhook;
 
   app().innerHTML = `
     <div class="text-center" style="padding-top:32px">
@@ -1095,8 +1102,14 @@ function renderDone() {
     <div class="card mt-4">
       <h3 class="mb-3">Træningsstatistik</h3>
       <div class="flex justify-between items-center" style="padding:8px 0;border-bottom:1px solid #f3f4f6">
-        <span>Varighed</span>
+        <span>Varighed (målt)</span>
         <span style="font-weight:600;font-variant-numeric:tabular-nums">${durationFormatted}</span>
+      </div>
+      <div class="flex justify-between items-center" style="padding:8px 0;border-bottom:1px solid #f3f4f6">
+        <span>Rediger varighed (min)</span>
+        <input id="edited-duration" type="number" min="0" value="${state.editedDurationMin}" 
+          onchange="state.editedDurationMin=parseInt(this.value)||0"
+          style="width:80px;padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;text-align:right;font-weight:600;font-family:inherit">
       </div>
       <div class="flex justify-between items-center" style="padding:8px 0;border-bottom:1px solid #f3f4f6">
         <span>Sæt gennemført</span>
@@ -1116,16 +1129,120 @@ function renderDone() {
 
     <div id="save-status"></div>
 
+    <div class="card mt-3" style="background:#f9fafb;border:1px dashed #d1d5db">
+      <p class="text-sm" style="font-weight:600;margin-bottom:8px">📡 Send træningslog</p>
+      <p class="text-xs text-gray mb-2">Webhook: ${hasWebhook ? '<span style="color:#059669">✓ konfigureret</span>' : '<span style="color:#dc2626">✗ mangler</span>'}</p>
+      <input id="webhook-input" type="text" placeholder="https://script.google.com/macros/s/..." 
+        value="${state.webhook || ''}"
+        style="width:100%;padding:10px;border-radius:10px;border:1px solid #e5e7eb;font-size:.75rem;font-family:monospace;margin-bottom:8px">
+      <button class="btn btn-primary btn-sm" onclick="manualSaveWorkout()" style="width:100%">
+        ${hasWebhook ? '🔄 Send igen' : '💾 Gem webhook & send'}
+      </button>
+    </div>
+
+    <div class="card mt-2">
+      <p class="text-sm" style="font-weight:600;margin-bottom:8px">📋 Kopier til udklipsholder</p>
+      <pre id="summary-text" style="font-size:.7rem;white-space:pre-wrap;word-break:break-word;font-family:monospace;color:#4b5563"></pre>
+      <button class="btn btn-outline mt-2" onclick="copyToClipboard()" style="width:100%">📋 Kopiér tekst</button>
+    </div>
+
     <button class="btn btn-primary mt-3" onclick="goHome()">
       ← Tilbage til start
     </button>`;
 
-  // Guard: only play music and save workout ONCE per done-screen
+  // Update summary text immediately
+  updateSummaryText();
+
+  // Guard: only play music and auto-save ONCE per done-screen
   if (!state._doneInitialized) {
     state._doneInitialized = true;
     setTimeout(() => playOdeToJoy(), 300);
-    saveWorkout();
+    // Auto-send if webhook exists
+    if (hasWebhook) {
+      autoSendWorkout();
+    }
   }
+}
+
+function buildPayload() {
+  const s = getSession();
+  const endTime = Date.now();
+  return {
+    date: new Date().toISOString().slice(0, 10),
+    session: state.sessionKey,
+    sessionName: s.name,
+    readiness: state.readiness,
+    startTime: state.startTime ? new Date(state.startTime).toTimeString().slice(0,5) : null,
+    endTime: new Date(endTime).toTimeString().slice(0,5),
+    durationMinutes: state.editedDurationMin !== undefined ? state.editedDurationMin : (state.startTime ? Math.round((endTime - state.startTime) / 60000) : null),
+    exercises: s.exercises.map((ex, i) => ({
+      name: ex.name,
+      targetSets: adjustedSets(ex),
+      targetReps: ex.reps,
+      targetRPE: adjustedRPE(ex),
+      sets: (state.log[i]?.sets || []).map((s, si) => ({
+        set: si + 1,
+        reps: s?.reps || null,
+        rpe: s?.rpe || null
+      })),
+      completed: state.log[i]?.completed || false
+    }))
+  };
+}
+
+function updateSummaryText() {
+  const payload = buildPayload();
+  const summary = formatSummaryText(payload);
+  const el = document.getElementById('summary-text');
+  if (el) el.textContent = summary;
+  window._workoutSummary = summary;
+  window._lastPayload = payload;
+}
+
+function autoSendWorkout() {
+  const statusEl = document.getElementById('save-status');
+  if (statusEl) {
+    statusEl.innerHTML = '<div class="save-status" style="background:#dbeafe;color:#1e40af">📤 Sender træningslog...</div>';
+  }
+  const payload = buildPayload();
+  fetch(state.webhook, {
+    method: 'POST',
+    mode: 'no-cors',  // Google Apps Script doesn't send CORS headers
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(() => {
+    // With no-cors we can't read response, but if fetch didn't throw, it was sent
+    if (statusEl) {
+      statusEl.innerHTML = '<div class="save-status save-ok">✓ Træningslog sendt til Health Data. Training Agent samler op ved næste kørsel.</div>';
+    }
+  })
+  .catch(e => {
+    if (statusEl) {
+      statusEl.innerHTML = `<div class="save-status save-err" style="background:#fee2e2;color:#991b1b">❌ Kunne ikke sende: ${e.message}. Prøv "Send igen" knappen eller kopiér teksten manuelt.</div>`;
+    }
+  });
+}
+
+function manualSaveWorkout() {
+  const inputEl = document.getElementById('webhook-input');
+  const url = inputEl ? inputEl.value.trim() : '';
+  if (!url) {
+    alert('Indtast en webhook URL først');
+    return;
+  }
+  // Save to localStorage and state
+  localStorage.setItem('bishop_training_webhook', url);
+  state.webhook = url;
+  // Update the payload with current edited duration and send
+  updateSummaryText();
+  autoSendWorkout();
+  // Re-render to update the "webhook status" line
+  setTimeout(() => {
+    const payload = buildPayload();
+    const statusEl = document.getElementById('save-status');
+    // Don't call render() — just update what we need to avoid wiping the screen
+  }, 100);
 }
 
 // ─── MOBILITY FLOW ──────────────────────────────────────────────────
@@ -1419,7 +1536,7 @@ function exitMobility() {
 // ─── STRENGTH WORKOUT ACTIONS ───────────────────────────────────────
 function changeSession(key) { state.sessionKey = key; state.log = {}; render(); }
 function changeReadiness(val) { state.readiness = val; state.log = {}; render(); }
-function goHome() { clearTimer(); stopWorkoutTimer(); clearMobTimer(); state.mobTimerRunning = false; releaseWakeLock(); state.screen = 'home'; state.exIndex = 0; state.setIndex = 0; state.showTips = false; state._doneInitialized = false; render(); }
+function goHome() { clearTimer(); stopWorkoutTimer(); clearMobTimer(); state.mobTimerRunning = false; releaseWakeLock(); state.screen = 'home'; state.exIndex = 0; state.setIndex = 0; state.showTips = false; state._doneInitialized = false; state.editedDurationMin = undefined; render(); }
 
 function startWorkout() {
   state.startTime = Date.now();
