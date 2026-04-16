@@ -793,7 +793,7 @@ function renderHome() {
       <div class="mb-4">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <p class="text-sm text-gray">${formatDate()}</p>
-          <span style="font-family:monospace;font-size:.7rem;color:#9ca3af;background:#f3f4f6;padding:3px 8px;border-radius:6px">v3.1</span>
+          <span style="font-family:monospace;font-size:.7rem;color:#9ca3af;background:#f3f4f6;padding:3px 8px;border-radius:6px">v3.2</span>
         </div>
         <h1 class="mt-1">${s.name}</h1>
         <p class="text-sm text-gray mt-1">${s.focus}</p>
@@ -1132,11 +1132,12 @@ function renderDone() {
     <div class="card mt-3" style="background:#f9fafb;border:1px dashed #d1d5db">
       <p class="text-sm" style="font-weight:600;margin-bottom:8px">📡 Send træningslog</p>
       <p class="text-xs text-gray mb-2">Webhook: ${hasWebhook ? '<span style="color:#059669">✓ konfigureret</span>' : '<span style="color:#dc2626">✗ mangler</span>'}</p>
+      <p class="text-xs text-gray mb-2">💡 Rediger varighed ovenfor før du sender hvis den ikke passer.</p>
       <input id="webhook-input" type="text" placeholder="https://script.google.com/macros/s/..." 
         value="${state.webhook || ''}"
         style="width:100%;padding:10px;border-radius:10px;border:1px solid #e5e7eb;font-size:.75rem;font-family:monospace;margin-bottom:8px">
       <button class="btn btn-primary btn-sm" onclick="manualSaveWorkout()" style="width:100%">
-        ${hasWebhook ? '🔄 Send igen' : '💾 Gem webhook & send'}
+        📤 Send træningslog
       </button>
     </div>
 
@@ -1153,14 +1154,10 @@ function renderDone() {
   // Update summary text immediately
   updateSummaryText();
 
-  // Guard: only play music and auto-save ONCE per done-screen
+  // Guard: only play music ONCE per done-screen (no auto-send — user must manually send)
   if (!state._doneInitialized) {
     state._doneInitialized = true;
     setTimeout(() => playOdeToJoy(), 300);
-    // Auto-send if webhook exists
-    if (hasWebhook) {
-      autoSendWorkout();
-    }
   }
 }
 
