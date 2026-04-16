@@ -462,6 +462,7 @@ let state = {
   timerTotal: 0,
   timerInterval: null,
   showTips: false,
+  _doneInitialized: false,
   warmupDemoIndex: -1,
   cooldownDemoIndex: -1,
   wakeLock: null,
@@ -692,7 +693,11 @@ function render() {
     case 'exercise': return renderExercise();
     case 'rest': return renderRest();
     case 'cooldown': return renderCooldown();
-    case 'done': return renderDone();
+    case 'done': 
+      // Once done screen is fully initialized (music + save called), don't re-render the entire screen
+      // This prevents input fields / save-status from being wiped out
+      if (state._doneInitialized) return;
+      return renderDone();
     case 'mobility': return renderMobilityExercise();
     case 'mobility_done': return renderMobilityDone();
   }
@@ -1115,8 +1120,12 @@ function renderDone() {
       ← Tilbage til start
     </button>`;
 
-  setTimeout(() => playOdeToJoy(), 300);
-  saveWorkout();
+  // Guard: only play music and save workout ONCE per done-screen
+  if (!state._doneInitialized) {
+    state._doneInitialized = true;
+    setTimeout(() => playOdeToJoy(), 300);
+    saveWorkout();
+  }
 }
 
 // ─── MOBILITY FLOW ──────────────────────────────────────────────────
@@ -1410,7 +1419,7 @@ function exitMobility() {
 // ─── STRENGTH WORKOUT ACTIONS ───────────────────────────────────────
 function changeSession(key) { state.sessionKey = key; state.log = {}; render(); }
 function changeReadiness(val) { state.readiness = val; state.log = {}; render(); }
-function goHome() { clearTimer(); stopWorkoutTimer(); clearMobTimer(); state.mobTimerRunning = false; releaseWakeLock(); state.screen = 'home'; state.exIndex = 0; state.setIndex = 0; state.showTips = false; render(); }
+function goHome() { clearTimer(); stopWorkoutTimer(); clearMobTimer(); state.mobTimerRunning = false; releaseWakeLock(); state.screen = 'home'; state.exIndex = 0; state.setIndex = 0; state.showTips = false; state._doneInitialized = false; render(); }
 
 function startWorkout() {
   state.startTime = Date.now();
@@ -1585,7 +1594,17 @@ function prevExercise() {
   }
 }
 
-function finishWorkout() { state.screen = 'done'; render(); }
+function finishWorkout() { 
+  stopWorkoutTimer(); 
+  clearTimer();
+  clearMobTimer();
+  state.mobTimerRunning = false;
+  state.screen = 'done';
+  state._doneInitialized = false;
+  render();
+  // Release wake lock after render (it's async and will trigger another render, but the guard prevents issues)
+  releaseWakeLock();
+}
 
 // ─── TIMER ──────────────────────────────────────────────────────────
 function startRestTimer(seconds) {
